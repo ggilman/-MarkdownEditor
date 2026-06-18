@@ -516,4 +516,62 @@ public partial class MainWindow : Window
         EditorTextBox.Focus();
         EditorTextBox.CaretIndex = selectionStart + Math.Clamp(caretOffsetAfterInsert, 0, replacementText.Length);
     }
+
+    private void ViewMarkdownMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        // If unchecking the last visible view, automatically check the other view
+        if (!ViewMarkdownMenuItem.IsChecked && !ViewPreviewMenuItem.IsChecked)
+        {
+            ViewPreviewMenuItem.IsChecked = true;
+        }
+        UpdateViewVisibility();
+    }
+
+    private void ViewPreviewMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        // If unchecking the last visible view, automatically check the other view
+        if (!ViewMarkdownMenuItem.IsChecked && !ViewPreviewMenuItem.IsChecked)
+        {
+            ViewMarkdownMenuItem.IsChecked = true;
+        }
+        UpdateViewVisibility();
+    }
+
+    private void UpdateViewVisibility()
+    {
+        bool showEditor = ViewMarkdownMenuItem.IsChecked;
+        bool showPreview = ViewPreviewMenuItem.IsChecked;
+
+        // Update visibility and column widths
+        if (showEditor && showPreview)
+        {
+            // Both visible - split view
+            EditorBorder.Visibility = Visibility.Visible;
+            ViewSplitter.Visibility = Visibility.Visible;
+            PreviewBorder.Visibility = Visibility.Visible;
+            EditorColumn.Width = new GridLength(1, GridUnitType.Star);
+            SplitterColumn.Width = new GridLength(10);
+            PreviewColumn.Width = new GridLength(1, GridUnitType.Star);
+        }
+        else if (showEditor)
+        {
+            // Markdown only
+            EditorBorder.Visibility = Visibility.Visible;
+            ViewSplitter.Visibility = Visibility.Collapsed;
+            PreviewBorder.Visibility = Visibility.Collapsed;
+            EditorColumn.Width = new GridLength(1, GridUnitType.Star);
+            SplitterColumn.Width = new GridLength(0);
+            PreviewColumn.Width = new GridLength(0);
+        }
+        else
+        {
+            // Preview only
+            EditorBorder.Visibility = Visibility.Collapsed;
+            ViewSplitter.Visibility = Visibility.Collapsed;
+            PreviewBorder.Visibility = Visibility.Visible;
+            EditorColumn.Width = new GridLength(0);
+            SplitterColumn.Width = new GridLength(0);
+            PreviewColumn.Width = new GridLength(1, GridUnitType.Star);
+        }
+    }
 }
