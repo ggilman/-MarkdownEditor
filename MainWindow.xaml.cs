@@ -277,7 +277,9 @@ public partial class MainWindow : Window
 
         try
         {
-            DocxExporter.ExportFromMarkdown(EditorTextBox.Text, dialog.FileName);
+            bool autoNumberHeadings = AutoNumberHeadingsCheckBox.IsChecked ?? true;
+            bool useTitleStyle = UseTitleStyleCheckBox.IsChecked ?? true;
+            DocxExporter.ExportFromMarkdown(EditorTextBox.Text, dialog.FileName, autoNumberHeadings, useTitleStyle);
             StatusText.Text = $"Exported: {Path.GetFileName(dialog.FileName)}";
         }
         catch (Exception ex)
