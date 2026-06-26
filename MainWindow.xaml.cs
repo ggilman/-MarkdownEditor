@@ -30,22 +30,8 @@ public partial class MainWindow : Window
             await PreviewBrowser.EnsureCoreWebView2Async();
             _isWebView2Initialized = true;
 
-            // Inject JavaScript to prevent default drag/drop behavior in the WebView
-            await PreviewBrowser.CoreWebView2.ExecuteScriptAsync(@"
-                window.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                }, false);
-
-                window.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                }, false);
-            ");
-
-            // Set up drag-drop on the WPF control level
-            PreviewBrowser.AllowDrop = true;
-            PreviewBrowser.DragEnter += PreviewBrowser_DragEnter;
-            PreviewBrowser.DragOver += PreviewBrowser_DragOver;
-            PreviewBrowser.Drop += PreviewBrowser_Drop;
+            // Subscribe to NavigationCompleted to inject JavaScript after each page load
+            PreviewBrowser.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
 
             // Render initial content
             RenderPreview();
@@ -53,6 +39,29 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(this, $"Failed to initialize preview: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private async void CoreWebView2_NavigationCompleted(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
+    {
+        // Inject JavaScript to prevent default drag/drop behavior after each navigation
+        try
+        {
+            await PreviewBrowser.CoreWebView2.ExecuteScriptAsync(@"
+                window.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, true);
+
+                window.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, true);
+            ");
+        }
+        catch
+        {
+            // Silently ignore if script injection fails
         }
     }
 

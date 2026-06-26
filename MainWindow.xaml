@@ -121,7 +121,11 @@
                     <TextBlock FontWeight="SemiBold" Margin="0,0,0,6">Formatted Preview (Read Only)</TextBlock>
                     <wv2:WebView2 Name="PreviewBrowser" 
                                   Grid.Row="1"
-                                  DefaultBackgroundColor="White"/>
+                                  DefaultBackgroundColor="White"
+                                  AllowDrop="True"
+                                  DragEnter="PreviewBrowser_DragEnter"
+                                  DragOver="PreviewBrowser_DragOver"
+                                  Drop="PreviewBrowser_Drop"/>
                 </Grid>
             </Border>
         </Grid>
