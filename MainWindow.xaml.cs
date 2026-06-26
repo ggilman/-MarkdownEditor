@@ -1,5 +1,4 @@
 using Microsoft.Win32;
-using Microsoft.Win32;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -29,6 +28,8 @@ public partial class MainWindow : Window
         {
             await PreviewBrowser.EnsureCoreWebView2Async();
             _isWebView2Initialized = true;
+
+            PreviewBrowser.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
 
             // Render initial content
             RenderPreview();
@@ -602,9 +603,51 @@ public partial class MainWindow : Window
         HandleDragOver(e);
     }
 
+    private void EditorTextBox_PreviewDrop(object sender, DragEventArgs e)
+    {
+        HandleFileDrop(e);
+    }
+
     private void EditorTextBox_Drop(object sender, DragEventArgs e)
     {
         HandleFileDrop(e);
+    }
+
+    private void PreviewBrowser_NavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
+    {
+        if (e.Uri != null && e.Uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            e.Cancel = true;
+            OpenFileFromUri(e.Uri);
+        }
+    }
+
+    private void CoreWebView2_NewWindowRequested(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs e)
+    {
+        if (e.Uri != null && e.Uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            e.Handled = true;
+            OpenFileFromUri(e.Uri);
+        }
+    }
+
+    private void OpenFileFromUri(string uri)
+    {
+        try
+        {
+            string filePath = new Uri(uri).LocalPath;
+            if (Path.GetExtension(filePath).Equals(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                string content = File.ReadAllText(filePath);
+                EditorTextBox.Text = content;
+                StatusText.Text = $"Opened: {Path.GetFileName(filePath)}";
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Error opening file", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText.Text = "Failed to open file";
+        }
     }
 
     private void HandleDragOver(DragEventArgs e)
@@ -629,6 +672,9 @@ public partial class MainWindow : Window
 
     private void HandleFileDrop(DragEventArgs e)
     {
+        // Always mark as handled to prevent default behavior
+        e.Handled = true;
+
         try
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
@@ -641,7 +687,6 @@ public partial class MainWindow : Window
                     string content = File.ReadAllText(filePath);
                     EditorTextBox.Text = content;
                     StatusText.Text = $"Opened: {Path.GetFileName(filePath)}";
-                    e.Handled = true;
                 }
             }
         }
