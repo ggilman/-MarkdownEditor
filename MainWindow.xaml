@@ -1,6 +1,7 @@
         <Window x:Class="MarkdownUtilsApp.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="Markdown Utils" Height="720" Width="1200" MinHeight="500" MinWidth="800">
     <DockPanel LastChildFill="True">
         <Menu DockPanel.Dock="Top">
@@ -106,22 +107,21 @@
 
             <GridSplitter Name="ViewSplitter" Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch" Background="#EEE" />
 
-            <Border Name="PreviewBorder" Grid.Column="2" BorderBrush="#DDD" BorderThickness="1" CornerRadius="6" Padding="8">
+            <Border Name="PreviewBorder" 
+                    Grid.Column="2" 
+                    BorderBrush="#DDD" 
+                    BorderThickness="1" 
+                    CornerRadius="6" 
+                    Padding="8">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <TextBlock FontWeight="SemiBold" Margin="0,0,0,6">Formatted Preview (Read Only)</TextBlock>
-                    <Grid Name="PreviewContainer" 
-                          Grid.Row="1"
-                          AllowDrop="True"
-                          PreviewDragEnter="PreviewContainer_PreviewDragEnter"
-                          PreviewDragOver="PreviewContainer_PreviewDragOver"
-                          PreviewDrop="PreviewContainer_PreviewDrop"
-                          Background="Transparent">
-                        <WebBrowser Name="PreviewBrowser" AllowDrop="False"/>
-                    </Grid>
+                    <wv2:WebView2 Name="PreviewBrowser" 
+                                  Grid.Row="1"
+                                  DefaultBackgroundColor="White"/>
                 </Grid>
             </Border>
         </Grid>

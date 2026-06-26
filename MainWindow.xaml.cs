@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using Microsoft.Win32;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -13,11 +14,46 @@ public partial class MainWindow : Window
 {
     private const string DefaultMarkdown = "# Markdown Utils Example\n\nUse this sample to verify preview and Word export formatting.\n\n## Heading Levels\n\n### H3 Example\n\n#### H4 Example\n\n##### H5 Example\n\n###### H6 Example\n\n## Text Styles\n\nThis line uses **bold**, *italic*, ~~strikethrough~~, and `inline code`.\n\nA markdown link: [Markdown Guide](https://www.markdownguide.org)\n\nAn image placeholder: ![Sample image](https://example.com/image.png)\n\n---\n\n## Lists\n\n- Bullet one\n- Bullet two\n  - Nested bullet\n\n1. First step\n2. Second step\n   1. Nested numbered step\n\n- [x] Task complete\n- [ ] Task pending\n\n## Quote\n\n> Preview pane is read-only and this quote should be styled in Word export.\n\n## Code Block\n\n```csharp\nusing System;\n\nConsole.WriteLine(\"Hello markdown\");\n```\n\n## Table\n\n| Feature | Preview | Word Export |\n| --- | --- | --- |\n| Headings | Yes | Yes |\n| Tables | Yes | Yes |\n| Checkboxes | Yes | Yes |\n| Code Language Label | Yes | Yes |";
     private int _selectedHeadingLevel = 2;
+    private bool _isWebView2Initialized = false;
 
     public MainWindow()
     {
         InitializeComponent();
         EditorTextBox.Text = DefaultMarkdown;
+        InitializeWebView2Async();
+    }
+
+    private async void InitializeWebView2Async()
+    {
+        try
+        {
+            await PreviewBrowser.EnsureCoreWebView2Async();
+            _isWebView2Initialized = true;
+
+            // Inject JavaScript to prevent default drag/drop behavior in the WebView
+            await PreviewBrowser.CoreWebView2.ExecuteScriptAsync(@"
+                window.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                }, false);
+
+                window.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                }, false);
+            ");
+
+            // Set up drag-drop on the WPF control level
+            PreviewBrowser.AllowDrop = true;
+            PreviewBrowser.DragEnter += PreviewBrowser_DragEnter;
+            PreviewBrowser.DragOver += PreviewBrowser_DragOver;
+            PreviewBrowser.Drop += PreviewBrowser_Drop;
+
+            // Render initial content
+            RenderPreview();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, $"Failed to initialize preview: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private void EditorTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
@@ -124,7 +160,10 @@ public partial class MainWindow : Window
             "})();</script></head><body>" +
             htmlBody + "</body></html>";
 
-        PreviewBrowser.NavigateToString(htmlDocument);
+        if (_isWebView2Initialized)
+        {
+            PreviewBrowser.NavigateToString(htmlDocument);
+        }
     }
 
     private static string EnhanceCodeBlocksHtml(string htmlBody)
@@ -585,17 +624,17 @@ public partial class MainWindow : Window
         HandleFileDrop(e);
     }
 
-    private void PreviewContainer_PreviewDragEnter(object sender, DragEventArgs e)
+    private void PreviewBrowser_DragEnter(object sender, DragEventArgs e)
     {
         HandleDragOver(e);
     }
 
-    private void PreviewContainer_PreviewDragOver(object sender, DragEventArgs e)
+    private void PreviewBrowser_DragOver(object sender, DragEventArgs e)
     {
         HandleDragOver(e);
     }
 
-    private void PreviewContainer_PreviewDrop(object sender, DragEventArgs e)
+    private void PreviewBrowser_Drop(object sender, DragEventArgs e)
     {
         HandleFileDrop(e);
     }
