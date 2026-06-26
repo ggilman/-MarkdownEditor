@@ -574,4 +574,74 @@ public partial class MainWindow : Window
             PreviewColumn.Width = new GridLength(1, GridUnitType.Star);
         }
     }
+
+    private void EditorTextBox_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        HandleDragOver(e);
+    }
+
+    private void EditorTextBox_Drop(object sender, DragEventArgs e)
+    {
+        HandleFileDrop(e);
+    }
+
+    private void PreviewContainer_PreviewDragEnter(object sender, DragEventArgs e)
+    {
+        HandleDragOver(e);
+    }
+
+    private void PreviewContainer_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        HandleDragOver(e);
+    }
+
+    private void PreviewContainer_PreviewDrop(object sender, DragEventArgs e)
+    {
+        HandleFileDrop(e);
+    }
+
+    private void HandleDragOver(DragEventArgs e)
+    {
+        // Check if the drag data contains files
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+            // Check if it's a single .md file
+            if (files.Length == 1 && Path.GetExtension(files[0]).Equals(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+                return;
+            }
+        }
+
+        e.Effects = DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void HandleFileDrop(DragEventArgs e)
+    {
+        try
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+
+                if (files.Length == 1 && Path.GetExtension(files[0]).Equals(".md", StringComparison.OrdinalIgnoreCase))
+                {
+                    string filePath = files[0];
+                    string content = File.ReadAllText(filePath);
+                    EditorTextBox.Text = content;
+                    StatusText.Text = $"Opened: {Path.GetFileName(filePath)}";
+                    e.Handled = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Error opening file", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText.Text = "Failed to open file";
+        }
+    }
 }

@@ -96,6 +96,9 @@
                              TextWrapping="NoWrap"
                              FontFamily="Consolas"
                              FontSize="14"
+                             AllowDrop="True"
+                             PreviewDragOver="EditorTextBox_PreviewDragOver"
+                             Drop="EditorTextBox_Drop"
                              TextChanged="EditorTextBox_TextChanged"
                              PreviewKeyDown="EditorTextBox_PreviewKeyDown"/>
                 </Grid>
@@ -110,7 +113,15 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <TextBlock FontWeight="SemiBold" Margin="0,0,0,6">Formatted Preview (Read Only)</TextBlock>
-                    <WebBrowser Name="PreviewBrowser" Grid.Row="1"/>
+                    <Grid Name="PreviewContainer" 
+                          Grid.Row="1"
+                          AllowDrop="True"
+                          PreviewDragEnter="PreviewContainer_PreviewDragEnter"
+                          PreviewDragOver="PreviewContainer_PreviewDragOver"
+                          PreviewDrop="PreviewContainer_PreviewDrop"
+                          Background="Transparent">
+                        <WebBrowser Name="PreviewBrowser" AllowDrop="False"/>
+                    </Grid>
                 </Grid>
             </Border>
         </Grid>
