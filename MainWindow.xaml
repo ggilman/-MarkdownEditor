@@ -118,18 +118,15 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock FontWeight="SemiBold" Margin="0,0,0,6">Formatted Preview (Read Only)</TextBlock>
-                    <Grid Name="PreviewContainer" 
-                          Grid.Row="1"
-                          AllowDrop="True"
-                          PreviewDragEnter="PreviewContainer_PreviewDragEnter"
-                          PreviewDragOver="PreviewContainer_PreviewDragOver"
-                          PreviewDrop="PreviewContainer_PreviewDrop"
-                          Background="Transparent">
-                        <wv2:WebView2 Name="PreviewBrowser" 
-                                      DefaultBackgroundColor="White"
-                                      IsHitTestVisible="True"/>
-                    </Grid>
+                    <StackPanel Margin="0,0,0,6">
+                        <TextBlock FontWeight="SemiBold">Formatted Preview (Read Only)</TextBlock>
+                        <TextBlock FontSize="10" Foreground="#888" Margin="0,2,0,0">
+                            💡 Tip: Drag .md files to the editor (left) to open them
+                        </TextBlock>
+                    </StackPanel>
+                    <wv2:WebView2 Name="PreviewBrowser" 
+                                  Grid.Row="1"
+                                  DefaultBackgroundColor="White"/>
                 </Grid>
             </Border>
         </Grid>

@@ -30,38 +30,12 @@ public partial class MainWindow : Window
             await PreviewBrowser.EnsureCoreWebView2Async();
             _isWebView2Initialized = true;
 
-            // Subscribe to NavigationCompleted to inject JavaScript after each page load
-            PreviewBrowser.CoreWebView2.NavigationCompleted += CoreWebView2_NavigationCompleted;
-
             // Render initial content
             RenderPreview();
         }
         catch (Exception ex)
         {
             MessageBox.Show(this, $"Failed to initialize preview: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Warning);
-        }
-    }
-
-    private async void CoreWebView2_NavigationCompleted(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
-    {
-        // Inject JavaScript to prevent default drag/drop behavior after each navigation
-        try
-        {
-            await PreviewBrowser.CoreWebView2.ExecuteScriptAsync(@"
-                window.addEventListener('dragover', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, true);
-
-                window.addEventListener('drop', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }, true);
-            ");
-        }
-        catch
-        {
-            // Silently ignore if script injection fails
         }
     }
 
@@ -629,21 +603,6 @@ public partial class MainWindow : Window
     }
 
     private void EditorTextBox_Drop(object sender, DragEventArgs e)
-    {
-        HandleFileDrop(e);
-    }
-
-    private void PreviewContainer_PreviewDragEnter(object sender, DragEventArgs e)
-    {
-        HandleDragOver(e);
-    }
-
-    private void PreviewContainer_PreviewDragOver(object sender, DragEventArgs e)
-    {
-        HandleDragOver(e);
-    }
-
-    private void PreviewContainer_PreviewDrop(object sender, DragEventArgs e)
     {
         HandleFileDrop(e);
     }
