@@ -633,17 +633,17 @@ public partial class MainWindow : Window
         HandleFileDrop(e);
     }
 
-    private void PreviewBrowser_DragEnter(object sender, DragEventArgs e)
+    private void PreviewContainer_PreviewDragEnter(object sender, DragEventArgs e)
     {
         HandleDragOver(e);
     }
 
-    private void PreviewBrowser_DragOver(object sender, DragEventArgs e)
+    private void PreviewContainer_PreviewDragOver(object sender, DragEventArgs e)
     {
         HandleDragOver(e);
     }
 
-    private void PreviewBrowser_Drop(object sender, DragEventArgs e)
+    private void PreviewContainer_PreviewDrop(object sender, DragEventArgs e)
     {
         HandleFileDrop(e);
     }
