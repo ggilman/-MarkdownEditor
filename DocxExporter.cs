@@ -263,10 +263,9 @@ internal static class DocxExporter
                     continue;
                 }
 
-                PropertyInfo? checkedProperty = inline.GetType().GetProperty("Checked") ?? inline.GetType().GetProperty("IsChecked");
-                if (checkedProperty?.PropertyType == typeof(bool))
+                if (inline is Markdig.Extensions.TaskLists.TaskList taskList)
                 {
-                    return (bool)checkedProperty.GetValue(inline)!;
+                    return taskList.Checked;
                 }
 
                 return false;
@@ -500,9 +499,12 @@ internal static class DocxExporter
                 {
                     string text = literal.Content.ToString();
                     string strippedText = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*\d+(\.\d+)*\.?\s*", "");
-                    if (strippedText != text && !string.IsNullOrWhiteSpace(strippedText))
+                    if (strippedText != text)
                     {
-                        paragraph.Append(new Run(new Text(strippedText) { Space = SpaceProcessingModeValues.Preserve }));
+                        if (!string.IsNullOrWhiteSpace(strippedText))
+                        {
+                            paragraph.Append(new Run(new Text(strippedText) { Space = SpaceProcessingModeValues.Preserve }));
+                        }
                         isFirstInline = false;
                         continue;
                     }

@@ -36,16 +36,26 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, $"Failed to initialize preview: {ex.Message}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            // Fallback for missing WebView2 runtime
+            string htmlDocument = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body>" +
+                "<div style=\"padding: 20px; font-family: sans-serif; color: #333;\">" +
+                "<h2>Preview Unavailable</h2>" +
+                "<p>The formatted preview requires the Microsoft Edge WebView2 Runtime, which doesn't seem to be installed on this computer.</p>" +
+                "<p><a href=\"https://developer.microsoft.com/en-us/microsoft-edge/webview2/\">Download WebView2 Runtime</a></p>" +
+                "<p style=\"color: #666; font-size: 12px; margin-top: 20px;\">Error details: " + System.Net.WebUtility.HtmlEncode(ex.Message) + "</p>" +
+                "</div></body></html>";
+            
+            try { PreviewBrowser.NavigateToString(htmlDocument); } catch { /* ignore if completely broken */ }
+            _isWebView2Initialized = false;
         }
     }
 
-    private void EditorTextBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    private void EditorTextBox_TextChanged(object? sender, System.Windows.Controls.TextChangedEventArgs e)
     {
         RenderPreview();
     }
 
-    private void EditorTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+    private void EditorTextBox_PreviewKeyDown(object? sender, KeyEventArgs e)
     {
         ModifierKeys modifiers = Keyboard.Modifiers;
 
@@ -203,7 +213,7 @@ public partial class MainWindow : Window
         return string.Empty;
     }
 
-    private void NewButton_Click(object sender, RoutedEventArgs e)
+    private void NewButton_Click(object? sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(EditorTextBox.Text))
         {
@@ -229,7 +239,7 @@ public partial class MainWindow : Window
         StatusText.Text = "New document";
     }
 
-    private void SaveButton_Click(object sender, RoutedEventArgs e)
+    private void SaveButton_Click(object? sender, RoutedEventArgs e)
     {
         SaveFileDialog dialog = new()
         {
@@ -256,7 +266,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ImportButton_Click(object sender, RoutedEventArgs e)
+    private void ImportButton_Click(object? sender, RoutedEventArgs e)
     {
         OpenFileDialog dialog = new()
         {
@@ -281,7 +291,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ExportButton_Click(object sender, RoutedEventArgs e)
+    private void ExportButton_Click(object? sender, RoutedEventArgs e)
     {
         string suggestedFileName = GetSuggestedFileName(EditorTextBox.Text) ?? "document.docx";
 
@@ -355,12 +365,12 @@ public partial class MainWindow : Window
         return sanitized;
     }
 
-    private void HeadingApplyButton_Click(object sender, RoutedEventArgs e)
+    private void HeadingApplyButton_Click(object? sender, RoutedEventArgs e)
     {
         InsertHeading(_selectedHeadingLevel);
     }
 
-    private void HeadingDropdownButton_Click(object sender, RoutedEventArgs e)
+    private void HeadingDropdownButton_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not ToggleButton toggleButton || toggleButton.ContextMenu is null)
         {
@@ -372,7 +382,7 @@ public partial class MainWindow : Window
         toggleButton.ContextMenu.IsOpen = true;
     }
 
-    private void HeadingLevelMenuItem_Click(object sender, RoutedEventArgs e)
+    private void HeadingLevelMenuItem_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem menuItem)
         {
@@ -398,31 +408,31 @@ public partial class MainWindow : Window
         StatusText.Text = $"Inserted H{Math.Clamp(level, 1, 6)} heading markers";
     }
 
-    private void BoldButton_Click(object sender, RoutedEventArgs e)
+    private void BoldButton_Click(object? sender, RoutedEventArgs e)
     {
         WrapSelection("**", "bold text");
         StatusText.Text = "Applied bold formatting";
     }
 
-    private void ItalicButton_Click(object sender, RoutedEventArgs e)
+    private void ItalicButton_Click(object? sender, RoutedEventArgs e)
     {
         WrapSelection("*", "italic text");
         StatusText.Text = "Applied italic formatting";
     }
 
-    private void StrikethroughButton_Click(object sender, RoutedEventArgs e)
+    private void StrikethroughButton_Click(object? sender, RoutedEventArgs e)
     {
         WrapSelection("~~", "strikethrough text");
         StatusText.Text = "Applied strikethrough formatting";
     }
 
-    private void InlineCodeButton_Click(object sender, RoutedEventArgs e)
+    private void InlineCodeButton_Click(object? sender, RoutedEventArgs e)
     {
         WrapSelection("`", "code");
         StatusText.Text = "Applied inline code formatting";
     }
 
-    private void CodeBlockButton_Click(object sender, RoutedEventArgs e)
+    private void CodeBlockButton_Click(object? sender, RoutedEventArgs e)
     {
         string selectedText = EditorTextBox.SelectedText;
         if (string.IsNullOrEmpty(selectedText))
@@ -430,37 +440,37 @@ public partial class MainWindow : Window
             selectedText = "code";
         }
 
-        string replacement = $"```\n{selectedText}\n```";
+        string replacement = $"```{Environment.NewLine}{selectedText}{Environment.NewLine}```";
         ReplaceSelection(replacement, replacement.Length);
         StatusText.Text = "Inserted code block";
     }
 
-    private void HorizontalRuleButton_Click(object sender, RoutedEventArgs e)
+    private void HorizontalRuleButton_Click(object? sender, RoutedEventArgs e)
     {
         string replacement = $"{Environment.NewLine}---{Environment.NewLine}";
         ReplaceSelection(replacement, replacement.Length);
         StatusText.Text = "Inserted horizontal rule";
     }
 
-    private void BulletListButton_Click(object sender, RoutedEventArgs e)
+    private void BulletListButton_Click(object? sender, RoutedEventArgs e)
     {
         PrefixSelectedLines("- ");
         StatusText.Text = "Inserted bullet list markers";
     }
 
-    private void NumberedListButton_Click(object sender, RoutedEventArgs e)
+    private void NumberedListButton_Click(object? sender, RoutedEventArgs e)
     {
         TransformSelectedLinesWithIndex((line, index) => $"{index + 1}. {line}", "list item");
         StatusText.Text = "Inserted numbered list markers";
     }
 
-    private void QuoteButton_Click(object sender, RoutedEventArgs e)
+    private void QuoteButton_Click(object? sender, RoutedEventArgs e)
     {
         PrefixSelectedLines("> ");
         StatusText.Text = "Inserted quote markers";
     }
 
-    private void LinkButton_Click(object sender, RoutedEventArgs e)
+    private void LinkButton_Click(object? sender, RoutedEventArgs e)
     {
         string selectedText = string.IsNullOrWhiteSpace(EditorTextBox.SelectedText) ? "link text" : EditorTextBox.SelectedText;
         string replacement = $"[{selectedText}](https://example.com)";
@@ -468,7 +478,7 @@ public partial class MainWindow : Window
         StatusText.Text = "Inserted markdown link";
     }
 
-    private void ImageButton_Click(object sender, RoutedEventArgs e)
+    private void ImageButton_Click(object? sender, RoutedEventArgs e)
     {
         string selectedText = string.IsNullOrWhiteSpace(EditorTextBox.SelectedText) ? "alt text" : EditorTextBox.SelectedText;
         string replacement = $"![{selectedText}](https://example.com/image.png)";
@@ -540,7 +550,7 @@ public partial class MainWindow : Window
         EditorTextBox.CaretIndex = selectionStart + Math.Clamp(caretOffsetAfterInsert, 0, replacementText.Length);
     }
 
-    private void ViewMarkdownMenuItem_Click(object sender, RoutedEventArgs e)
+    private void ViewMarkdownMenuItem_Click(object? sender, RoutedEventArgs e)
     {
         // If unchecking the last visible view, automatically check the other view
         if (!ViewMarkdownMenuItem.IsChecked && !ViewPreviewMenuItem.IsChecked)
@@ -550,7 +560,7 @@ public partial class MainWindow : Window
         UpdateViewVisibility();
     }
 
-    private void ViewPreviewMenuItem_Click(object sender, RoutedEventArgs e)
+    private void ViewPreviewMenuItem_Click(object? sender, RoutedEventArgs e)
     {
         // If unchecking the last visible view, automatically check the other view
         if (!ViewMarkdownMenuItem.IsChecked && !ViewPreviewMenuItem.IsChecked)
@@ -598,22 +608,22 @@ public partial class MainWindow : Window
         }
     }
 
-    private void EditorTextBox_PreviewDragOver(object sender, DragEventArgs e)
+    private void EditorTextBox_PreviewDragOver(object? sender, DragEventArgs e)
     {
         HandleDragOver(e);
     }
 
-    private void EditorTextBox_PreviewDrop(object sender, DragEventArgs e)
+    private void EditorTextBox_PreviewDrop(object? sender, DragEventArgs e)
     {
         HandleFileDrop(e);
     }
 
-    private void EditorTextBox_Drop(object sender, DragEventArgs e)
+    private void EditorTextBox_Drop(object? sender, DragEventArgs e)
     {
         HandleFileDrop(e);
     }
 
-    private void PreviewBrowser_NavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
+    private void PreviewBrowser_NavigationStarting(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
     {
         if (e.Uri != null && e.Uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
         {
@@ -622,7 +632,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void CoreWebView2_NewWindowRequested(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs e)
+    private void CoreWebView2_NewWindowRequested(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2NewWindowRequestedEventArgs e)
     {
         if (e.Uri != null && e.Uri.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
         {
@@ -670,7 +680,7 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    private void HandleFileDrop(DragEventArgs e)
+    private async void HandleFileDrop(DragEventArgs e)
     {
         // Always mark as handled to prevent default behavior
         e.Handled = true;
@@ -684,7 +694,7 @@ public partial class MainWindow : Window
                 if (files.Length == 1 && Path.GetExtension(files[0]).Equals(".md", StringComparison.OrdinalIgnoreCase))
                 {
                     string filePath = files[0];
-                    string content = File.ReadAllText(filePath);
+                    string content = await File.ReadAllTextAsync(filePath);
                     EditorTextBox.Text = content;
                     StatusText.Text = $"Opened: {Path.GetFileName(filePath)}";
                 }

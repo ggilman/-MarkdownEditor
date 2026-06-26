@@ -1,0 +1,34 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "autoupdate": false,
+  "share": "disabled",
+  "permission": {
+    "write": "deny"
+  },
+  "model": "local/hub-model",
+  "provider": {
+    "local": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Local Gemma 4 (llama.cpp)",
+      "options": {
+        "baseURL": "http://ai-hub-engine:8080/v1",
+        "apiKey": "sk-local-bypass"
+      },
+      "models": {
+        "hub-model": {
+          "name": "Gemma 4 Local",
+          "contextLength": 131072
+        }
+      }
+    }
+  },
+  "mcp": {
+    "git": {"type": "local", "command": ["mcp-server-git","--repository","/MarkdownUtilsApp"], "enabled": true},
+    "filesystem": {"type": "local", "command": ["mcp-server-filesystem","/MarkdownUtilsApp"], "enabled": true},
+    "memory": {"type": "local", "command": ["mcp-server-memory"], "enabled": true},
+    "thinking": {"type": "local", "command": ["mcp-server-sequential-thinking"], "enabled": true},
+    "shell": {"type": "local", "command": ["cli-mcp-server"], "enabled": true, "environment": {"ALLOWED_DIR": "/MarkdownUtilsApp","ALLOWED_COMMANDS": "all","ALLOWED_FLAGS": "all","ALLOW_SHELL_OPERATORS": "true","COMMAND_TIMEOUT": "120"}},
+    "fetch": {"type": "local", "command": ["mcp-server-fetch"], "enabled": true},
+    "time": {"type": "local", "command": ["mcp-server-time"], "enabled": true}
+  }
+}
