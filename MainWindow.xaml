@@ -6,7 +6,7 @@
     <DockPanel LastChildFill="True">
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_View">
-                <MenuItem Header="Markdown Editor" Name="ViewMarkdownMenuItem" IsCheckable="True" IsChecked="True" Click="ViewMarkdownMenuItem_Click" />
+                <MenuItem Header="Markdown Editor" Name="ViewMarkdownMenuItem" IsCheckable="True" IsChecked="False" Click="ViewMarkdownMenuItem_Click" />
                 <MenuItem Header="Formatted Preview" Name="ViewPreviewMenuItem" IsCheckable="True" IsChecked="True" Click="ViewPreviewMenuItem_Click" />
             </MenuItem>
         </Menu>

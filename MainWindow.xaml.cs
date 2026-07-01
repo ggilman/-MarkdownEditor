@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         EditorTextBox.Text = DefaultMarkdown;
+        UpdateViewVisibility();
         InitializeWebView2Async();
     }
 
@@ -116,6 +117,9 @@ public partial class MainWindow : Window
         string htmlBody = EnhanceCodeBlocksHtml(MarkdownConverter.ToHtml(markdown));
 
         string htmlDocument = "<!doctype html><html><head><meta charset=\"utf-8\">" +
+            "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css\" integrity=\"sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV\" crossorigin=\"anonymous\">" +
+            "<script defer src=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js\" integrity=\"sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8\" crossorigin=\"anonymous\"></script>" +
+            "<script defer src=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js\" integrity=\"sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05\" crossorigin=\"anonymous\"></script>" +
             "<style>body{font-family:Segoe UI,Arial,sans-serif;padding:12px;line-height:1.5;color:#222;}" +
             ".code-block{margin:1em 0;border-radius:6px;overflow:hidden;border:1px solid #d8d8d8;background:#f3f3f3;}" +
             ".code-header{position:relative;background:#333;color:#f2f2f2;padding:7px 72px 7px 10px;min-height:30px;" +
@@ -151,6 +155,19 @@ public partial class MainWindow : Window
             "else{button.innerText='Failed';setTimeout(function(){button.innerText='Copy';},1000);}" +
             "return false;" +
             "};" +
+            "document.addEventListener('DOMContentLoaded',function(){" +
+            "if(window.renderMathInElement){" +
+            "renderMathInElement(document.body,{" +
+            "delimiters:[" +
+            "{left:'$$',right:'$$',display:true}," +
+            "{left:'$',right:'$',display:false}," +
+            "{left:'\\\\[',right:'\\\\]',display:true}," +
+            "{left:'\\\\(',right:'\\\\)',display:false}" +
+            "]," +
+            "throwOnError:false" +
+            "});" +
+            "}" +
+            "});" +
             "})();</script></head><body>" +
             htmlBody + "</body></html>";
 

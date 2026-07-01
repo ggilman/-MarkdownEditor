@@ -7,6 +7,7 @@ A desktop application for editing, previewing, and exporting Markdown documents 
 ### Markdown Editing
 - Full-featured Markdown editor with syntax support
 - Live formatted preview pane
+- LaTeX math notation support (inline and display math)
 - Keyboard shortcuts for common formatting operations
 - Toolbar buttons for quick access to Markdown syntax
 
@@ -22,6 +23,7 @@ A desktop application for editing, previewing, and exporting Markdown documents 
   - Horizontal rules
   - Links and images
   - Task lists (checkboxes)
+  - LaTeX math equations (rendered as text/images)
 
 ### Configurable Export Options
 - **Auto-number headings**: Automatically apply Word's multilevel numbering to headings
@@ -193,6 +195,36 @@ Console.WriteLine("Hello World");
 ```markdown
 ---
 ```
+
+### LaTeX Math Notation
+```markdown
+Inline math: $E = mc^2$ or \(E = mc^2\)
+
+Display (block) math:
+$$
+\int_{0}^{\infty} e^{-x} dx = 1
+$$
+
+Or using \[...\]:
+\[
+\sum_{i=1}^{n} i = \frac{n(n+1)}{2}
+\]
+```
+
+**Supported delimiters:**
+- `$...$` - Inline math
+- `$$...$$` - Display math (centered, on its own line)
+- `\(...\)` - Inline math (alternative)
+- `\[...\]` - Display math (alternative)
+
+**Examples:**
+- Arrows: `$\rightarrow$` ? ?, `$\leftrightarrow$` ? ?
+- Greek letters: `$\alpha$, $\beta$, $\gamma$`
+- Fractions: `$\frac{a}{b}$`
+- Subscripts/superscripts: `$x^2$, $x_{i}$`
+- Integrals: `$\int_{a}^{b} f(x) dx$`
+
+Math is rendered using [KaTeX](https://katex.org/) in the preview pane. For full LaTeX syntax support, see the [KaTeX documentation](https://katex.org/docs/supported.html).
 
 ## Word Export Details
 
