@@ -340,8 +340,8 @@ public partial class MainWindow : Window
 
         try
         {
-            bool autoNumberHeadings = AutoNumberHeadingsCheckBox.IsChecked ?? true;
-            bool useTitleStyle = UseTitleStyleCheckBox.IsChecked ?? true;
+            bool autoNumberHeadings = AutoNumberHeadingsMenuItem.IsChecked;
+            bool useTitleStyle = UseTitleStyleMenuItem.IsChecked;
             DocxExporter.ExportFromMarkdown(EditorTextBox.Text, dialog.FileName, autoNumberHeadings, useTitleStyle);
             StatusText.Text = $"Exported: {Path.GetFileName(dialog.FileName)}";
         }
@@ -477,35 +477,17 @@ public partial class MainWindow : Window
         InsertHeading(_selectedHeadingLevel);
     }
 
-    private void HeadingDropdownButton_Click(object? sender, RoutedEventArgs e)
+    private void HeadingComboBox_SelectionChanged(object? sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (sender is not ToggleButton toggleButton || toggleButton.ContextMenu is null)
+        if (sender is ComboBox comboBox && comboBox.SelectedIndex >= 0)
         {
-            return;
+            _selectedHeadingLevel = comboBox.SelectedIndex + 1;
         }
-
-        toggleButton.ContextMenu.PlacementTarget = toggleButton;
-        toggleButton.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-        toggleButton.ContextMenu.IsOpen = true;
     }
 
-    private void HeadingLevelMenuItem_Click(object? sender, RoutedEventArgs e)
+    private void ExitMenuItem_Click(object? sender, RoutedEventArgs e)
     {
-        if (sender is not MenuItem menuItem)
-        {
-            return;
-        }
-
-        if (!int.TryParse(menuItem.Tag?.ToString(), out int level))
-        {
-            return;
-        }
-
-        _selectedHeadingLevel = Math.Clamp(level, 1, 6);
-        HeadingApplyButton.Content = $"H{_selectedHeadingLevel}";
-        StatusText.Text = $"Selected H{_selectedHeadingLevel}";
-
-        HeadingDropdownButton.IsChecked = false;
+        Close();
     }
 
     private void InsertHeading(int level)
@@ -713,6 +695,25 @@ public partial class MainWindow : Window
             SplitterColumn.Width = new GridLength(0);
             PreviewColumn.Width = new GridLength(1, GridUnitType.Star);
         }
+
+        // Show/hide editor-specific toolbar buttons
+        Visibility editorToolsVisibility = showEditor ? Visibility.Visible : Visibility.Collapsed;
+        ToolbarSeparator1.Visibility = editorToolsVisibility;
+        ToolbarBoldButton.Visibility = editorToolsVisibility;
+        ToolbarItalicButton.Visibility = editorToolsVisibility;
+        ToolbarStrikeButton.Visibility = editorToolsVisibility;
+        ToolbarCodeButton.Visibility = editorToolsVisibility;
+        ToolbarSeparator2.Visibility = editorToolsVisibility;
+        ToolbarLinkButton.Visibility = editorToolsVisibility;
+        ToolbarImageButton.Visibility = editorToolsVisibility;
+        ToolbarSeparator3.Visibility = editorToolsVisibility;
+        ToolbarBulletButton.Visibility = editorToolsVisibility;
+        ToolbarNumberButton.Visibility = editorToolsVisibility;
+        ToolbarQuoteButton.Visibility = editorToolsVisibility;
+        ToolbarSeparator4.Visibility = editorToolsVisibility;
+        HeadingLabel.Visibility = editorToolsVisibility;
+        HeadingComboBox.Visibility = editorToolsVisibility;
+        ToolbarHeadingButton.Visibility = editorToolsVisibility;
     }
 
     private void EditorBorder_PreviewDragOver(object? sender, DragEventArgs e)

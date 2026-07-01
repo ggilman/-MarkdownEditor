@@ -6,11 +6,16 @@
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <ApplicationIcon>markdown-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="inspect_markdig.cs" />
     <Compile Remove="test_compile.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="markdown-icon.ico" />
   </ItemGroup>
 
   <ItemGroup>

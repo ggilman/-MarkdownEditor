@@ -2,36 +2,85 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-        Title="Markdown Utils" Height="720" Width="1200" MinHeight="500" MinWidth="800">
+        Title="Markdown Editor" Height="720" Width="1200" MinHeight="500" MinWidth="800"
+        Icon="markdown-icon.ico">
     <DockPanel LastChildFill="True">
         <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New" Name="NewMenuItem" Click="NewButton_Click" InputGestureText="Ctrl+N" />
+                <MenuItem Header="_Open..." Name="OpenMenuItem" Click="ImportButton_Click" InputGestureText="Ctrl+O" />
+                <MenuItem Header="_Save..." Name="SaveMenuItem" Click="SaveButton_Click" InputGestureText="Ctrl+S" />
+                <Separator />
+                <MenuItem Header="E_xit" Name="ExitMenuItem" Click="ExitMenuItem_Click" InputGestureText="Alt+F4" />
+            </MenuItem>
+            <MenuItem Header="_Export">
+                <MenuItem Header="Export to _Word (.docx)..." Name="ExportWordMenuItem" Click="ExportButton_Click" />
+                <MenuItem Header="Export to _PDF..." Name="ExportPdfMenuItem" Click="ExportPdfButton_Click" />
+                <Separator />
+                <MenuItem Header="Auto-number headings" Name="AutoNumberHeadingsMenuItem" IsCheckable="True" IsChecked="True"
+                          ToolTip="Automatically number headings in Word export (strips manual numbers from markdown)" />
+                <MenuItem Header="# as Title" Name="UseTitleStyleMenuItem" IsCheckable="True" IsChecked="True"
+                          ToolTip="Use Title style for # (H1 becomes Title, ## becomes Heading 1, etc.)" />
+            </MenuItem>
             <MenuItem Header="_View">
                 <MenuItem Header="Markdown Editor" Name="ViewMarkdownMenuItem" IsCheckable="True" IsChecked="False" Click="ViewMarkdownMenuItem_Click" />
                 <MenuItem Header="Formatted Preview" Name="ViewPreviewMenuItem" IsCheckable="True" IsChecked="True" Click="ViewPreviewMenuItem_Click" />
             </MenuItem>
         </Menu>
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="10,0,10,10">
-            <Button Name="NewButton" Width="100" Margin="0,0,10,0" Padding="10,6" Click="NewButton_Click">New</Button>
-            <Button Name="SaveButton" Width="120" Margin="0,0,10,0" Padding="10,6" Click="SaveButton_Click">Save .md</Button>
-            <Button Name="ImportButton" Width="120" Margin="0,0,10,0" Padding="10,6" Click="ImportButton_Click">Import .md</Button>
-            <Button Name="ExportButton" Width="140" Margin="0,0,10,0" Padding="10,6" Click="ExportButton_Click">Export .docx</Button>
-            <Button Name="ExportPdfButton" Width="140" Margin="0,0,10,0" Padding="10,6" Click="ExportPdfButton_Click">Export .pdf</Button>
-            <CheckBox Name="AutoNumberHeadingsCheckBox" 
-                      VerticalAlignment="Center" 
-                      Margin="10,0,10,0" 
-                      IsChecked="True"
-                      ToolTip="Automatically number headings in Word export (strips manual numbers from markdown)">
-                <TextBlock Text="Auto-number headings" FontSize="12"/>
-            </CheckBox>
-            <CheckBox Name="UseTitleStyleCheckBox" 
-                      VerticalAlignment="Center" 
-                      Margin="0,0,20,0" 
-                      IsChecked="True"
-                      ToolTip="Use Title style for # (H1 becomes Title, ## becomes Heading 1, etc.)">
-                <TextBlock Text="# as Title" FontSize="12"/>
-            </CheckBox>
-            <TextBlock Name="StatusText" VerticalAlignment="Center" Foreground="#555">Ready</TextBlock>
-        </StackPanel>
+
+        <ToolBarTray DockPanel.Dock="Top" Background="#F5F5F5">
+            <ToolBar Background="Transparent" ToolBarTray.IsLocked="True">
+                <Button Name="ToolbarNewButton" Click="NewButton_Click" ToolTip="New document (Ctrl+N)" Padding="6,4">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="16" Margin="0,0,4,0">📄</TextBlock>
+                        <TextBlock>New</TextBlock>
+                    </StackPanel>
+                </Button>
+                <Button Name="ToolbarOpenButton" Click="ImportButton_Click" ToolTip="Open markdown file (Ctrl+O)" Padding="6,4">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="16" Margin="0,0,4,0">📂</TextBlock>
+                        <TextBlock>Open</TextBlock>
+                    </StackPanel>
+                </Button>
+                <Button Name="ToolbarSaveButton" Click="SaveButton_Click" ToolTip="Save markdown file (Ctrl+S)" Padding="6,4">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock FontSize="16" Margin="0,0,4,0">💾</TextBlock>
+                        <TextBlock>Save</TextBlock>
+                    </StackPanel>
+                </Button>
+                <Separator Name="ToolbarSeparator1" />
+                <Button Name="ToolbarBoldButton" Click="BoldButton_Click" ToolTip="Bold (Ctrl+B)" Padding="6,4" FontWeight="Bold">B</Button>
+                <Button Name="ToolbarItalicButton" Click="ItalicButton_Click" ToolTip="Italic (Ctrl+I)" Padding="6,4" FontStyle="Italic">I</Button>
+                <Button Name="ToolbarStrikeButton" Click="StrikethroughButton_Click" ToolTip="Strikethrough" Padding="6,4">
+                    <TextBlock TextDecorations="Strikethrough">S</TextBlock>
+                </Button>
+                <Button Name="ToolbarCodeButton" Click="InlineCodeButton_Click" ToolTip="Inline code (Ctrl+Shift+K)" Padding="6,4" FontFamily="Consolas">&lt;/&gt;</Button>
+                <Separator Name="ToolbarSeparator2" />
+                <Button Name="ToolbarLinkButton" Click="LinkButton_Click" ToolTip="Insert link (Ctrl+K)" Padding="6,4">🔗</Button>
+                <Button Name="ToolbarImageButton" Click="ImageButton_Click" ToolTip="Insert image" Padding="6,4">🖼️</Button>
+                <Separator Name="ToolbarSeparator3" />
+                <Button Name="ToolbarBulletButton" Click="BulletListButton_Click" ToolTip="Bullet list (Ctrl+Shift+8)" Padding="6,4">• List</Button>
+                <Button Name="ToolbarNumberButton" Click="NumberedListButton_Click" ToolTip="Numbered list (Ctrl+Shift+7)" Padding="6,4">1. List</Button>
+                <Button Name="ToolbarQuoteButton" Click="QuoteButton_Click" ToolTip="Quote (Ctrl+Shift+Q)" Padding="6,4">" Quote</Button>
+                <Separator Name="ToolbarSeparator4" />
+                <TextBlock Name="HeadingLabel" VerticalAlignment="Center" Margin="8,0,4,0" Foreground="#666">Heading:</TextBlock>
+                <ComboBox Name="HeadingComboBox" Width="60" SelectedIndex="1" SelectionChanged="HeadingComboBox_SelectionChanged" ToolTip="Insert heading">
+                    <ComboBoxItem>H1</ComboBoxItem>
+                    <ComboBoxItem>H2</ComboBoxItem>
+                    <ComboBoxItem>H3</ComboBoxItem>
+                    <ComboBoxItem>H4</ComboBoxItem>
+                    <ComboBoxItem>H5</ComboBoxItem>
+                    <ComboBoxItem>H6</ComboBoxItem>
+                </ComboBox>
+                <Button Name="ToolbarHeadingButton" Click="HeadingApplyButton_Click" ToolTip="Apply heading (Ctrl+2)" Padding="6,4" Margin="4,0,0,0">Apply</Button>
+            </ToolBar>
+        </ToolBarTray>
+
+        <StatusBar DockPanel.Dock="Bottom" Background="#F5F5F5">
+            <StatusBarItem>
+                <TextBlock Name="StatusText" Foreground="#555">Ready</TextBlock>
+            </StatusBarItem>
+        </StatusBar>
 
         <Grid Margin="10,0,10,10">
             <Grid.ColumnDefinitions>
@@ -47,53 +96,11 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <TextBlock FontWeight="SemiBold" Margin="0,0,0,6">Raw Markdown</TextBlock>
-                    <WrapPanel Grid.Row="1" Margin="0,0,0,6">
-                        <Grid Margin="0,0,6,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <Button Name="HeadingApplyButton"
-                                    Grid.Column="0"
-                                    Padding="8,4"
-                                    MinWidth="40"
-                                    BorderThickness="1,1,0,1"
-                                    Click="HeadingApplyButton_Click">H2</Button>
-                            <ToggleButton Name="HeadingDropdownButton"
-                                          Grid.Column="1"
-                                          Padding="6,4"
-                                          BorderThickness="1"
-                                          Click="HeadingDropdownButton_Click">▼
-                                <ToggleButton.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="H1" Tag="1" Click="HeadingLevelMenuItem_Click" />
-                                        <MenuItem Header="H2" Tag="2" Click="HeadingLevelMenuItem_Click" />
-                                        <MenuItem Header="H3" Tag="3" Click="HeadingLevelMenuItem_Click" />
-                                        <MenuItem Header="H4" Tag="4" Click="HeadingLevelMenuItem_Click" />
-                                        <MenuItem Header="H5" Tag="5" Click="HeadingLevelMenuItem_Click" />
-                                        <MenuItem Header="H6" Tag="6" Click="HeadingLevelMenuItem_Click" />
-                                    </ContextMenu>
-                                </ToggleButton.ContextMenu>
-                            </ToggleButton>
-                        </Grid>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="BoldButton_Click">Bold</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="ItalicButton_Click">Italic</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="StrikethroughButton_Click">Strike</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="InlineCodeButton_Click">Inline Code</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="CodeBlockButton_Click">Code Block</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="HorizontalRuleButton_Click">Rule</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="BulletListButton_Click">Bullet List</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="NumberedListButton_Click">Numbered List</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="QuoteButton_Click">Quote</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="LinkButton_Click">Link</Button>
-                        <Button Margin="0,0,6,6" Padding="8,4" Click="ImageButton_Click">Image</Button>
-                    </WrapPanel>
                     <TextBox Name="EditorTextBox"
-                             Grid.Row="2"
+                             Grid.Row="1"
                              AcceptsReturn="True"
                              AcceptsTab="True"
                              VerticalScrollBarVisibility="Auto"
@@ -126,12 +133,7 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <StackPanel Margin="0,0,0,6">
-                        <TextBlock FontWeight="SemiBold">Formatted Preview (Read Only)</TextBlock>
-                        <TextBlock FontSize="10" Foreground="#888" Margin="0,2,0,0">
-                            💡 Tip: Drag .md files to the editor (left) to open them
-                        </TextBlock>
-                    </StackPanel>
+                    <TextBlock FontWeight="SemiBold" Margin="0,0,0,6">Formatted Preview (Read Only)</TextBlock>
                     <wv2:WebView2 Name="PreviewBrowser" 
                                   Grid.Row="1"
                                   DefaultBackgroundColor="White"
