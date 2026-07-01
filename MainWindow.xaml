@@ -15,6 +15,7 @@
             <Button Name="SaveButton" Width="120" Margin="0,0,10,0" Padding="10,6" Click="SaveButton_Click">Save .md</Button>
             <Button Name="ImportButton" Width="120" Margin="0,0,10,0" Padding="10,6" Click="ImportButton_Click">Import .md</Button>
             <Button Name="ExportButton" Width="140" Margin="0,0,10,0" Padding="10,6" Click="ExportButton_Click">Export .docx</Button>
+            <Button Name="ExportPdfButton" Width="140" Margin="0,0,10,0" Padding="10,6" Click="ExportPdfButton_Click">Export .pdf</Button>
             <CheckBox Name="AutoNumberHeadingsCheckBox" 
                       VerticalAlignment="Center" 
                       Margin="10,0,10,0" 

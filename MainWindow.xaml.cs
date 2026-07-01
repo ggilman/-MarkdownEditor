@@ -14,6 +14,7 @@ public partial class MainWindow : Window
     private const string DefaultMarkdown = "# Markdown Utils Example\n\nUse this sample to verify preview and Word export formatting.\n\n## Heading Levels\n\n### H3 Example\n\n#### H4 Example\n\n##### H5 Example\n\n###### H6 Example\n\n## Text Styles\n\nThis line uses **bold**, *italic*, ~~strikethrough~~, and `inline code`.\n\nA markdown link: [Markdown Guide](https://www.markdownguide.org)\n\nAn image placeholder: ![Sample image](https://example.com/image.png)\n\n---\n\n## Lists\n\n- Bullet one\n- Bullet two\n  - Nested bullet\n\n1. First step\n2. Second step\n   1. Nested numbered step\n\n- [x] Task complete\n- [ ] Task pending\n\n## Quote\n\n> Preview pane is read-only and this quote should be styled in Word export.\n\n## Code Block\n\n```csharp\nusing System;\n\nConsole.WriteLine(\"Hello markdown\");\n```\n\n## Table\n\n| Feature | Preview | Word Export |\n| --- | --- | --- |\n| Headings | Yes | Yes |\n| Tables | Yes | Yes |\n| Checkboxes | Yes | Yes |\n| Code Language Label | Yes | Yes |";
     private int _selectedHeadingLevel = 2;
     private bool _isWebView2Initialized = false;
+    private string? _currentFileName = null;
 
     public MainWindow()
     {
@@ -116,11 +117,20 @@ public partial class MainWindow : Window
         string markdown = EditorTextBox.Text;
         string htmlBody = EnhanceCodeBlocksHtml(MarkdownConverter.ToHtml(markdown));
 
+        string documentTitle = string.IsNullOrEmpty(_currentFileName) ? "Markdown Preview" : _currentFileName;
         string htmlDocument = "<!doctype html><html><head><meta charset=\"utf-8\">" +
+            $"<title>{System.Net.WebUtility.HtmlEncode(documentTitle)}</title>" +
             "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css\" integrity=\"sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV\" crossorigin=\"anonymous\">" +
             "<script defer src=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js\" integrity=\"sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8\" crossorigin=\"anonymous\"></script>" +
             "<script defer src=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js\" integrity=\"sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05\" crossorigin=\"anonymous\"></script>" +
-            "<style>body{font-family:Segoe UI,Arial,sans-serif;padding:12px;line-height:1.5;color:#222;}" +
+            "<style>" +
+            "@page{margin:0.5in;size:auto;}" +
+            "@media print{" +
+            "@page{margin:0.5in;}" +
+            "body{margin:0;padding:12px;}" +
+            ".code-copy-btn{display:none !important;}" +
+            "}" +
+            "body{font-family:Segoe UI,Arial,sans-serif;padding:12px;line-height:1.5;color:#222;}" +
             ".code-block{margin:1em 0;border-radius:6px;overflow:hidden;border:1px solid #d8d8d8;background:#f3f3f3;}" +
             ".code-header{position:relative;background:#333;color:#f2f2f2;padding:7px 72px 7px 10px;min-height:30px;" +
             "box-sizing:border-box;white-space:normal;}" +
@@ -134,7 +144,8 @@ public partial class MainWindow : Window
             ".code-copy-btn:hover{background:#5a5a5a;}" +
             "code{background:#f3f3f3;padding:2px 4px;border-radius:4px;}" +
             "blockquote{border-left:4px solid #999;padding-left:10px;color:#444;margin-left:0;}" +
-            "table{border-collapse:collapse;}th,td{border:1px solid #ccc;padding:6px;}</style>" +
+            "table{border-collapse:collapse;}th,td{border:1px solid #ccc;padding:6px;}" +
+            "</style>" +
             "<script>(function(){" +
             "function getText(el){if(!el){return '';}if(typeof el.textContent==='string'){return el.textContent;}if(typeof el.innerText==='string'){return el.innerText;}return '';}" +
             "function copyText(text){" +
@@ -253,6 +264,7 @@ public partial class MainWindow : Window
 
         EditorTextBox.Clear();
         EditorTextBox.Focus();
+        _currentFileName = null;
         StatusText.Text = "New document";
     }
 
@@ -299,7 +311,8 @@ public partial class MainWindow : Window
         try
         {
             EditorTextBox.Text = File.ReadAllText(dialog.FileName);
-            StatusText.Text = $"Imported: {Path.GetFileName(dialog.FileName)}";
+            _currentFileName = Path.GetFileName(dialog.FileName);
+            StatusText.Text = $"Imported: {_currentFileName}";
         }
         catch (Exception ex)
         {
@@ -339,6 +352,66 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void ExportPdfButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (!_isWebView2Initialized)
+        {
+            MessageBox.Show(this, "Preview is not ready. Please wait a moment and try again.", "PDF Export", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        string suggestedFileName = GetSuggestedFileName(EditorTextBox.Text);
+        if (suggestedFileName != null && suggestedFileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+        {
+            suggestedFileName = Path.ChangeExtension(suggestedFileName, ".pdf");
+        }
+        else
+        {
+            suggestedFileName = "document.pdf";
+        }
+
+        SaveFileDialog dialog = new()
+        {
+            Filter = "PDF document (*.pdf)|*.pdf",
+            DefaultExt = ".pdf",
+            FileName = suggestedFileName,
+            Title = "Export to PDF"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var settings = PreviewBrowser.CoreWebView2.Environment.CreatePrintSettings();
+            settings.ShouldPrintHeaderAndFooter = false;
+            settings.MarginTop = 0.5;
+            settings.MarginBottom = 0.5;
+            settings.MarginLeft = 0.5;
+            settings.MarginRight = 0.5;
+            settings.ScaleFactor = 1.0;
+
+            bool success = await PreviewBrowser.CoreWebView2.PrintToPdfAsync(dialog.FileName, settings);
+
+            if (success)
+            {
+                StatusText.Text = $"Exported: {Path.GetFileName(dialog.FileName)}";
+            }
+            else
+            {
+                MessageBox.Show(this, "PDF export was cancelled or failed.", "Export failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                StatusText.Text = "PDF export failed";
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, "Export failed", MessageBoxButton.OK, MessageBoxImage.Error);
+            StatusText.Text = "PDF export failed";
+        }
+    }
+
     private static string? GetSuggestedFileName(string markdown)
     {
         if (string.IsNullOrWhiteSpace(markdown))
@@ -370,13 +443,30 @@ public partial class MainWindow : Window
 
     private static string SanitizeFileName(string fileName)
     {
+        // First, strip common markdown formatting
+        string cleaned = fileName;
+
+        // Remove bold/italic markers
+        cleaned = Regex.Replace(cleaned, @"\*\*([^\*]+)\*\*", "$1"); // **bold**
+        cleaned = Regex.Replace(cleaned, @"\*([^\*]+)\*", "$1"); // *italic*
+        cleaned = Regex.Replace(cleaned, @"__([^_]+)__", "$1"); // __bold__
+        cleaned = Regex.Replace(cleaned, @"_([^_]+)_", "$1"); // _italic_
+        cleaned = Regex.Replace(cleaned, @"~~([^~]+)~~", "$1"); // ~~strikethrough~~
+        cleaned = Regex.Replace(cleaned, @"`([^`]+)`", "$1"); // `code`
+
+        // Replace invalid filename characters with underscores
         char[] invalidChars = Path.GetInvalidFileNameChars();
-        string sanitized = string.Concat(fileName.Select(c => invalidChars.Contains(c) ? '_' : c));
-        sanitized = sanitized.Trim();
+        string sanitized = string.Concat(cleaned.Select(c => invalidChars.Contains(c) ? '_' : c));
+
+        // Collapse multiple consecutive underscores into one
+        sanitized = Regex.Replace(sanitized, @"_+", "_");
+
+        // Remove leading/trailing underscores and whitespace
+        sanitized = sanitized.Trim('_', ' ');
 
         if (sanitized.Length > 200)
         {
-            sanitized = sanitized.Substring(0, 200).TrimEnd();
+            sanitized = sanitized.Substring(0, 200).TrimEnd('_', ' ');
         }
 
         return sanitized;
@@ -687,7 +777,8 @@ public partial class MainWindow : Window
             {
                 string content = File.ReadAllText(filePath);
                 EditorTextBox.Text = content;
-                StatusText.Text = $"Opened: {Path.GetFileName(filePath)}";
+                _currentFileName = Path.GetFileName(filePath);
+                StatusText.Text = $"Opened: {_currentFileName}";
             }
         }
         catch (Exception ex)
@@ -733,7 +824,8 @@ public partial class MainWindow : Window
                     string filePath = files[0];
                     string content = await File.ReadAllTextAsync(filePath);
                     EditorTextBox.Text = content;
-                    StatusText.Text = $"Opened: {Path.GetFileName(filePath)}";
+                    _currentFileName = Path.GetFileName(filePath);
+                    StatusText.Text = $"Opened: {_currentFileName}";
                 }
             }
         }
