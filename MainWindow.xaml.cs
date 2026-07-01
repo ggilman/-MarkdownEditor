@@ -608,6 +608,16 @@ public partial class MainWindow : Window
         }
     }
 
+    private void EditorBorder_PreviewDragOver(object? sender, DragEventArgs e)
+    {
+        HandleDragOver(e);
+    }
+
+    private void EditorBorder_PreviewDrop(object? sender, DragEventArgs e)
+    {
+        HandleFileDrop(e);
+    }
+
     private void EditorTextBox_PreviewDragOver(object? sender, DragEventArgs e)
     {
         HandleDragOver(e);

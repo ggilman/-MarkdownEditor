@@ -39,7 +39,10 @@
                 <ColumnDefinition Name="PreviewColumn" Width="*" />
             </Grid.ColumnDefinitions>
 
-            <Border Name="EditorBorder" Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="6" Padding="8">
+            <Border Name="EditorBorder" Grid.Column="0" BorderBrush="#DDD" BorderThickness="1" CornerRadius="6" Padding="8"
+                    AllowDrop="True"
+                    PreviewDragOver="EditorBorder_PreviewDragOver"
+                    PreviewDrop="EditorBorder_PreviewDrop">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
