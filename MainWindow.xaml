@@ -116,7 +116,10 @@
                     BorderBrush="#DDD" 
                     BorderThickness="1" 
                     CornerRadius="6" 
-                    Padding="8">
+                    Padding="8"
+                    AllowDrop="True"
+                    PreviewDragOver="PreviewBorder_PreviewDragOver"
+                    PreviewDrop="PreviewBorder_PreviewDrop">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
