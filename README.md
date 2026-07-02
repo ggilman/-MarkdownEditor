@@ -1,4 +1,4 @@
-# Markdown Utils
+# Markdown Editor
 
 A desktop application for editing, previewing, and exporting Markdown documents to Microsoft Word format with advanced formatting options.
 
@@ -264,12 +264,12 @@ Inline formatting (bold, italic, code, links) is fully preserved within:
 
 ### Project Structure
 ```
-MarkdownUtilsApp/
-??? MainWindow.xaml          # UI layout
-??? MainWindow.xaml.cs       # UI event handlers and editing logic
-??? DocxExporter.cs          # Word document generation
-??? MarkdownConverter.cs     # HTML preview rendering
-??? MarkdownUtilsApp.csproj  # Project file
+MarkdownEditor/
+?? MainWindow.xaml          # UI layout
+?? MainWindow.xaml.cs       # UI event handlers and editing logic
+?? DocxExporter.cs          # Word document generation
+?? MarkdownConverter.cs     # HTML preview rendering
+?? MarkdownEditor.csproj    # Project file
 ```
 
 ### Key Components

@@ -7,11 +7,98 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
-namespace MarkdownUtilsApp;
+namespace MarkdownEditor;
 
+/// <summary>
+/// Main window providing markdown editing, live preview, and export functionality.
+/// </summary>
 public partial class MainWindow : Window
 {
-    private const string DefaultMarkdown = "# Markdown Utils Example\n\nUse this sample to verify preview and Word export formatting.\n\n## Heading Levels\n\n### H3 Example\n\n#### H4 Example\n\n##### H5 Example\n\n###### H6 Example\n\n## Text Styles\n\nThis line uses **bold**, *italic*, ~~strikethrough~~, and `inline code`.\n\nA markdown link: [Markdown Guide](https://www.markdownguide.org)\n\nAn image placeholder: ![Sample image](https://example.com/image.png)\n\n---\n\n## Lists\n\n- Bullet one\n- Bullet two\n  - Nested bullet\n\n1. First step\n2. Second step\n   1. Nested numbered step\n\n- [x] Task complete\n- [ ] Task pending\n\n## Quote\n\n> Preview pane is read-only and this quote should be styled in Word export.\n\n## Code Block\n\n```csharp\nusing System;\n\nConsole.WriteLine(\"Hello markdown\");\n```\n\n## Table\n\n| Feature | Preview | Word Export |\n| --- | --- | --- |\n| Headings | Yes | Yes |\n| Tables | Yes | Yes |\n| Checkboxes | Yes | Yes |\n| Code Language Label | Yes | Yes |";
+    // UI Constants
+    private const string DefaultPreviewTitle = "Markdown Preview";
+    private const int MaxFileNameLength = 200;
+
+    // Preview Styling Constants
+    private const string PreviewFontFamily = "Segoe UI,Arial,sans-serif";
+    private const string CodeFontFamily = "Consolas";
+    private const string CodeBackgroundColor = "#f3f3f3";
+    private const string CodeHeaderBackground = "#333";
+    private const string CodeHeaderForeground = "#f2f2f2";
+    private const string CodeCopyButtonBackground = "#4a4a4a";
+    private const string CodeCopyButtonHoverBackground = "#5a5a5a";
+    private const string CodeBorderColor = "#d8d8d8";
+    private const string BlockquoteBorderColor = "#999";
+    private const string BlockquoteTextColor = "#444";
+    private const string TableBorderColor = "#ccc";
+    private const string BodyTextColor = "#222";
+    private const string CodeBorderGrayColor = "#666";
+
+    // KaTeX CDN Constants
+    private const string KatexVersion = "0.16.9";
+    private const string KatexCssUrl = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css";
+    private const string KatexCssIntegrity = "sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV";
+    private const string KatexJsUrl = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js";
+    private const string KatexJsIntegrity = "sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8";
+    private const string KatexAutoRenderUrl = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js";
+    private const string KatexAutoRenderIntegrity = "sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05";
+
+    // Copy button text
+    private const string CopyButtonText = "Copy";
+    private const string CopyButtonCopiedText = "Copied";
+    private const string CopyButtonFailedText = "Failed";
+    private const int CopyButtonFeedbackDelayMs = 1000;
+
+    // Markdown formatting markers
+    private const string BoldMarker = "**";
+    private const string ItalicMarker = "*";
+    private const string StrikethroughMarker = "~~";
+    private const string InlineCodeMarker = "`";
+    private const string CodeBlockMarker = "```";
+    private const string BulletListPrefix = "- ";
+    private const string QuotePrefix = "> ";
+    private const string HorizontalRuleMarker = "---";
+
+    // Placeholder text
+    private const string BoldPlaceholder = "bold text";
+    private const string ItalicPlaceholder = "italic text";
+    private const string StrikethroughPlaceholder = "strikethrough text";
+    private const string CodePlaceholder = "code";
+    private const string LinkTextPlaceholder = "link text";
+    private const string LinkUrlPlaceholder = "https://example.com";
+    private const string ImageAltPlaceholder = "alt text";
+    private const string ImageUrlPlaceholder = "https://example.com/image.png";
+    private const string ListItemPlaceholder = "list item";
+    private const string TextPlaceholder = "text";
+
+    // Status messages
+    private const string StatusReady = "Ready";
+    private const string StatusEditorClear = "Editor already clear";
+    private const string StatusNewDocument = "New document";
+    private const string StatusSaveFailed = "Save failed";
+    private const string StatusImportFailed = "Import failed";
+    private const string StatusExportFailed = "Export failed";
+    private const string StatusBoldApplied = "Applied bold formatting";
+    private const string StatusItalicApplied = "Applied italic formatting";
+    private const string StatusStrikethroughApplied = "Applied strikethrough formatting";
+    private const string StatusInlineCodeApplied = "Applied inline code formatting";
+    private const string StatusCodeBlockInserted = "Inserted code block";
+    private const string StatusHorizontalRuleInserted = "Inserted horizontal rule";
+    private const string StatusBulletListInserted = "Inserted bullet list markers";
+    private const string StatusNumberedListInserted = "Inserted numbered list markers";
+    private const string StatusQuoteInserted = "Inserted quote markers";
+    private const string StatusLinkInserted = "Inserted markdown link";
+    private const string StatusImageInserted = "Inserted markdown image";
+
+    // File filter constants
+    private const string MarkdownFileFilter = "Markdown files (*.md)|*.md|All files (*.*)|*.*";
+    private const string WordFileFilter = "Word document (*.docx)|*.docx";
+    private const string PdfFileFilter = "PDF document (*.pdf)|*.pdf";
+    private const string MarkdownExtension = ".md";
+    private const string WordExtension = ".docx";
+    private const string PdfExtension = ".pdf";
+    private const string DefaultDocumentName = "document";
+
+    private const string DefaultMarkdown = "# Markdown Editor Example\n\nUse this sample to verify preview and Word export formatting.\n\n## Heading Levels\n\n### H3 Example\n\n#### H4 Example\n\n##### H5 Example\n\n###### H6 Example\n\n## Text Styles\n\nThis line uses **bold**, *italic*, ~~strikethrough~~, and `inline code`.\n\nA markdown link: [Markdown Guide](https://www.markdownguide.org)\n\nAn image placeholder: ![Sample image](https://example.com/image.png)\n\n---\n\n## Lists\n\n- Bullet one\n- Bullet two\n  - Nested bullet\n\n1. First step\n2. Second step\n   1. Nested numbered step\n\n- [x] Task complete\n- [ ] Task pending\n\n## Quote\n\n> Preview pane is read-only and this quote should be styled in Word export.\n\n## Code Block\n\n```csharp\nusing System;\n\nConsole.WriteLine(\"Hello markdown\");\n```\n\n## Table\n\n| Feature | Preview | Word Export |\n| --- | --- | --- |\n| Headings | Yes | Yes |\n| Tables | Yes | Yes |\n| Checkboxes | Yes | Yes |\n| Code Language Label | Yes | Yes |";
     private int _selectedHeadingLevel = 2;
     private bool _isWebView2Initialized = false;
     private string? _currentFileName = null;
@@ -24,6 +111,10 @@ public partial class MainWindow : Window
         InitializeWebView2Async();
     }
 
+    /// <summary>
+    /// Initializes the WebView2 control for preview rendering.
+    /// Shows an error message if WebView2 Runtime is not installed.
+    /// </summary>
     private async void InitializeWebView2Async()
     {
         try
@@ -33,12 +124,10 @@ public partial class MainWindow : Window
 
             PreviewBrowser.CoreWebView2.NewWindowRequested += CoreWebView2_NewWindowRequested;
 
-            // Render initial content
             RenderPreview();
         }
         catch (Exception ex)
         {
-            // Fallback for missing WebView2 runtime
             string htmlDocument = "<!doctype html><html><head><meta charset=\"utf-8\"></head><body>" +
                 "<div style=\"padding: 20px; font-family: sans-serif; color: #333;\">" +
                 "<h2>Preview Unavailable</h2>" +
@@ -112,17 +201,21 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Renders the current markdown text as HTML in the preview pane.
+    /// Includes KaTeX for LaTeX math rendering and custom code block styling.
+    /// </summary>
     private void RenderPreview()
     {
         string markdown = EditorTextBox.Text;
         string htmlBody = EnhanceCodeBlocksHtml(MarkdownConverter.ToHtml(markdown));
 
-        string documentTitle = string.IsNullOrEmpty(_currentFileName) ? "Markdown Preview" : _currentFileName;
+        string documentTitle = string.IsNullOrEmpty(_currentFileName) ? DefaultPreviewTitle : _currentFileName;
         string htmlDocument = "<!doctype html><html><head><meta charset=\"utf-8\">" +
             $"<title>{System.Net.WebUtility.HtmlEncode(documentTitle)}</title>" +
-            "<link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css\" integrity=\"sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV\" crossorigin=\"anonymous\">" +
-            "<script defer src=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js\" integrity=\"sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8\" crossorigin=\"anonymous\"></script>" +
-            "<script defer src=\"https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js\" integrity=\"sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05\" crossorigin=\"anonymous\"></script>" +
+            $"<link rel=\"stylesheet\" href=\"{KatexCssUrl}\" integrity=\"{KatexCssIntegrity}\" crossorigin=\"anonymous\">" +
+            $"<script defer src=\"{KatexJsUrl}\" integrity=\"{KatexJsIntegrity}\" crossorigin=\"anonymous\"></script>" +
+            $"<script defer src=\"{KatexAutoRenderUrl}\" integrity=\"{KatexAutoRenderIntegrity}\" crossorigin=\"anonymous\"></script>" +
             "<style>" +
             "@page{margin:0.5in;size:auto;}" +
             "@media print{" +
@@ -130,21 +223,21 @@ public partial class MainWindow : Window
             "body{margin:0;padding:12px;}" +
             ".code-copy-btn{display:none !important;}" +
             "}" +
-            "body{font-family:Segoe UI,Arial,sans-serif;padding:12px;line-height:1.5;color:#222;}" +
-            ".code-block{margin:1em 0;border-radius:6px;overflow:hidden;border:1px solid #d8d8d8;background:#f3f3f3;}" +
-            ".code-header{position:relative;background:#333;color:#f2f2f2;padding:7px 72px 7px 10px;min-height:30px;" +
+            $"body{{font-family:{PreviewFontFamily};padding:12px;line-height:1.5;color:{BodyTextColor};}}" +
+            $".code-block{{margin:1em 0;border-radius:6px;overflow:hidden;border:1px solid {CodeBorderColor};background:{CodeBackgroundColor};}}" +
+            $".code-header{{position:relative;background:{CodeHeaderBackground};color:{CodeHeaderForeground};padding:7px 72px 7px 10px;min-height:30px;" +
             "box-sizing:border-box;white-space:normal;}" +
-            ".code-lang-badge{display:inline-block;font-size:12px;line-height:1.2;color:#f2f2f2;}" +
-            ".code-block pre{margin:0;background:#f3f3f3;overflow:auto;}" +
+            $".code-lang-badge{{display:inline-block;font-size:12px;line-height:1.2;color:{CodeHeaderForeground};}}" +
+            $".code-block pre{{margin:0;background:{CodeBackgroundColor};overflow:auto;}}" +
             ".code-block pre > code{display:block;padding:10px;}" +
-            ".code-copy-btn{position:absolute;right:10px;top:6px;border:1px solid #666;background:#4a4a4a;color:#fff;" +
+            $".code-copy-btn{{position:absolute;right:10px;top:6px;border:1px solid {CodeBorderGrayColor};background:{CodeCopyButtonBackground};color:#fff;" +
             "border-radius:4px;padding:2px 8px;font-size:12px;line-height:1.2;cursor:pointer;opacity:0;visibility:hidden;" +
             "transition:opacity .15s ease;}" +
             ".code-block:hover .code-copy-btn,.code-block:focus-within .code-copy-btn{opacity:1;visibility:visible;}" +
-            ".code-copy-btn:hover{background:#5a5a5a;}" +
-            "code{background:#f3f3f3;padding:2px 4px;border-radius:4px;}" +
-            "blockquote{border-left:4px solid #999;padding-left:10px;color:#444;margin-left:0;}" +
-            "table{border-collapse:collapse;}th,td{border:1px solid #ccc;padding:6px;}" +
+            $".code-copy-btn:hover{{background:{CodeCopyButtonHoverBackground};}}" +
+            $"code{{background:{CodeBackgroundColor};padding:2px 4px;border-radius:4px;}}" +
+            $"blockquote{{border-left:4px solid {BlockquoteBorderColor};padding-left:10px;color:{BlockquoteTextColor};margin-left:0;}}" +
+            $"table{{border-collapse:collapse;}}th,td{{border:1px solid {TableBorderColor};padding:6px;}}" +
             "</style>" +
             "<script>(function(){" +
             "function getText(el){if(!el){return '';}if(typeof el.textContent==='string'){return el.textContent;}if(typeof el.innerText==='string'){return el.innerText;}return '';}" +
@@ -162,8 +255,8 @@ public partial class MainWindow : Window
             "var pre=pres&&pres.length?pres[0]:null;" +
             "var codes=pre?pre.getElementsByTagName('code'):null;" +
             "var text=getText(codes&&codes.length?codes[0]:pre);" +
-            "if(copyText(text)){button.innerText='Copied';setTimeout(function(){button.innerText='Copy';},1000);}" +
-            "else{button.innerText='Failed';setTimeout(function(){button.innerText='Copy';},1000);}" +
+            $"if(copyText(text)){{button.innerText='{CopyButtonCopiedText}';setTimeout(function(){{button.innerText='{CopyButtonText}';}},{CopyButtonFeedbackDelayMs});}}" +
+            $"else{{button.innerText='{CopyButtonFailedText}';setTimeout(function(){{button.innerText='{CopyButtonText}';}},{CopyButtonFeedbackDelayMs});}}" +
             "return false;" +
             "};" +
             "document.addEventListener('DOMContentLoaded',function(){" +
@@ -188,6 +281,9 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Enhances code blocks in HTML with language badges and copy buttons.
+    /// </summary>
     private static string EnhanceCodeBlocksHtml(string htmlBody)
     {
         if (string.IsNullOrEmpty(htmlBody))
@@ -203,9 +299,9 @@ public partial class MainWindow : Window
                 string attrs = match.Groups["attrs"].Value;
                 string content = match.Groups["content"].Value;
                 string language = ExtractLanguage(attrs);
-                string badgeText = string.IsNullOrWhiteSpace(language) ? "code" : language;
+                string badgeText = string.IsNullOrWhiteSpace(language) ? CodePlaceholder : language;
                 string badge = $"<div class=\"code-header\"><span class=\"code-lang-badge\">{System.Net.WebUtility.HtmlEncode(badgeText)}</span>" +
-                               "<button type=\"button\" class=\"code-copy-btn\" onclick=\"return copyCode(this);\">Copy</button></div>";
+                               $"<button type=\"button\" class=\"code-copy-btn\" onclick=\"return copyCode(this);\">{CopyButtonText}</button></div>";
 
                   return "<div class=\"code-block\">" +
                        badge +
@@ -246,7 +342,7 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(EditorTextBox.Text))
         {
             EditorTextBox.Focus();
-            StatusText.Text = "Editor already clear";
+            StatusText.Text = StatusEditorClear;
             return;
         }
 
@@ -265,16 +361,16 @@ public partial class MainWindow : Window
         EditorTextBox.Clear();
         EditorTextBox.Focus();
         _currentFileName = null;
-        StatusText.Text = "New document";
+        StatusText.Text = StatusNewDocument;
     }
 
     private void SaveButton_Click(object? sender, RoutedEventArgs e)
     {
         SaveFileDialog dialog = new()
         {
-            Filter = "Markdown files (*.md)|*.md|All files (*.*)|*.*",
-            DefaultExt = ".md",
-            FileName = "document.md",
+            Filter = MarkdownFileFilter,
+            DefaultExt = MarkdownExtension,
+            FileName = $"{DefaultDocumentName}{MarkdownExtension}",
             Title = "Save Markdown"
         };
 
@@ -291,7 +387,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Save failed", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusText.Text = "Save failed";
+            StatusText.Text = StatusSaveFailed;
         }
     }
 
@@ -299,7 +395,7 @@ public partial class MainWindow : Window
     {
         OpenFileDialog dialog = new()
         {
-            Filter = "Markdown files (*.md)|*.md|All files (*.*)|*.*",
+            Filter = MarkdownFileFilter,
             Title = "Import Markdown"
         };
 
@@ -317,18 +413,18 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Import failed", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusText.Text = "Import failed";
+            StatusText.Text = StatusImportFailed;
         }
     }
 
     private void ExportButton_Click(object? sender, RoutedEventArgs e)
     {
-        string suggestedFileName = GetSuggestedFileName(EditorTextBox.Text) ?? "document.docx";
+        string suggestedFileName = GetSuggestedFileName(EditorTextBox.Text) ?? $"{DefaultDocumentName}{WordExtension}";
 
         SaveFileDialog dialog = new()
         {
-            Filter = "Word document (*.docx)|*.docx",
-            DefaultExt = ".docx",
+            Filter = WordFileFilter,
+            DefaultExt = WordExtension,
             FileName = suggestedFileName,
             Title = "Export to Word"
         };
@@ -348,7 +444,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             MessageBox.Show(this, ex.Message, "Export failed", MessageBoxButton.OK, MessageBoxImage.Error);
-            StatusText.Text = "Export failed";
+            StatusText.Text = StatusExportFailed;
         }
     }
 
@@ -361,19 +457,19 @@ public partial class MainWindow : Window
         }
 
         string suggestedFileName = GetSuggestedFileName(EditorTextBox.Text);
-        if (suggestedFileName != null && suggestedFileName.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+        if (suggestedFileName != null && suggestedFileName.EndsWith(WordExtension, StringComparison.OrdinalIgnoreCase))
         {
-            suggestedFileName = Path.ChangeExtension(suggestedFileName, ".pdf");
+            suggestedFileName = Path.ChangeExtension(suggestedFileName, PdfExtension);
         }
         else
         {
-            suggestedFileName = "document.pdf";
+            suggestedFileName = $"{DefaultDocumentName}{PdfExtension}";
         }
 
         SaveFileDialog dialog = new()
         {
-            Filter = "PDF document (*.pdf)|*.pdf",
-            DefaultExt = ".pdf",
+            Filter = PdfFileFilter,
+            DefaultExt = PdfExtension,
             FileName = suggestedFileName,
             Title = "Export to PDF"
         };
@@ -412,6 +508,11 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Extracts the first heading from markdown to suggest as a filename.
+    /// </summary>
+    /// <param name="markdown">The markdown text to parse.</param>
+    /// <returns>Sanitized filename with .docx extension, or null if no heading found.</returns>
     private static string? GetSuggestedFileName(string markdown)
     {
         if (string.IsNullOrWhiteSpace(markdown))
@@ -432,7 +533,7 @@ public partial class MainWindow : Window
                     string sanitized = SanitizeFileName(headerText);
                     if (!string.IsNullOrWhiteSpace(sanitized))
                     {
-                        return sanitized + ".docx";
+                        return sanitized + WordExtension;
                     }
                 }
             }
@@ -441,32 +542,30 @@ public partial class MainWindow : Window
         return null;
     }
 
+    /// <summary>
+    /// Sanitizes a string for use as a filename by removing markdown formatting
+    /// and replacing invalid characters with underscores.
+    /// </summary>
     private static string SanitizeFileName(string fileName)
     {
-        // First, strip common markdown formatting
         string cleaned = fileName;
 
-        // Remove bold/italic markers
-        cleaned = Regex.Replace(cleaned, @"\*\*([^\*]+)\*\*", "$1"); // **bold**
-        cleaned = Regex.Replace(cleaned, @"\*([^\*]+)\*", "$1"); // *italic*
-        cleaned = Regex.Replace(cleaned, @"__([^_]+)__", "$1"); // __bold__
-        cleaned = Regex.Replace(cleaned, @"_([^_]+)_", "$1"); // _italic_
-        cleaned = Regex.Replace(cleaned, @"~~([^~]+)~~", "$1"); // ~~strikethrough~~
-        cleaned = Regex.Replace(cleaned, @"`([^`]+)`", "$1"); // `code`
+        cleaned = Regex.Replace(cleaned, @"\*\*([^\*]+)\*\*", "$1");
+        cleaned = Regex.Replace(cleaned, @"\*([^\*]+)\*", "$1");
+        cleaned = Regex.Replace(cleaned, @"__([^_]+)__", "$1");
+        cleaned = Regex.Replace(cleaned, @"_([^_]+)_", "$1");
+        cleaned = Regex.Replace(cleaned, @"~~([^~]+)~~", "$1");
+        cleaned = Regex.Replace(cleaned, @"`([^`]+)`", "$1");
 
-        // Replace invalid filename characters with underscores
         char[] invalidChars = Path.GetInvalidFileNameChars();
         string sanitized = string.Concat(cleaned.Select(c => invalidChars.Contains(c) ? '_' : c));
 
-        // Collapse multiple consecutive underscores into one
         sanitized = Regex.Replace(sanitized, @"_+", "_");
-
-        // Remove leading/trailing underscores and whitespace
         sanitized = sanitized.Trim('_', ' ');
 
-        if (sanitized.Length > 200)
+        if (sanitized.Length > MaxFileNameLength)
         {
-            sanitized = sanitized.Substring(0, 200).TrimEnd('_', ' ');
+            sanitized = sanitized.Substring(0, MaxFileNameLength).TrimEnd('_', ' ');
         }
 
         return sanitized;
@@ -499,26 +598,26 @@ public partial class MainWindow : Window
 
     private void BoldButton_Click(object? sender, RoutedEventArgs e)
     {
-        WrapSelection("**", "bold text");
-        StatusText.Text = "Applied bold formatting";
+        WrapSelection(BoldMarker, BoldPlaceholder);
+        StatusText.Text = StatusBoldApplied;
     }
 
     private void ItalicButton_Click(object? sender, RoutedEventArgs e)
     {
-        WrapSelection("*", "italic text");
-        StatusText.Text = "Applied italic formatting";
+        WrapSelection(ItalicMarker, ItalicPlaceholder);
+        StatusText.Text = StatusItalicApplied;
     }
 
     private void StrikethroughButton_Click(object? sender, RoutedEventArgs e)
     {
-        WrapSelection("~~", "strikethrough text");
-        StatusText.Text = "Applied strikethrough formatting";
+        WrapSelection(StrikethroughMarker, StrikethroughPlaceholder);
+        StatusText.Text = StatusStrikethroughApplied;
     }
 
     private void InlineCodeButton_Click(object? sender, RoutedEventArgs e)
     {
-        WrapSelection("`", "code");
-        StatusText.Text = "Applied inline code formatting";
+        WrapSelection(InlineCodeMarker, CodePlaceholder);
+        StatusText.Text = StatusInlineCodeApplied;
     }
 
     private void CodeBlockButton_Click(object? sender, RoutedEventArgs e)
@@ -526,55 +625,60 @@ public partial class MainWindow : Window
         string selectedText = EditorTextBox.SelectedText;
         if (string.IsNullOrEmpty(selectedText))
         {
-            selectedText = "code";
+            selectedText = CodePlaceholder;
         }
 
-        string replacement = $"```{Environment.NewLine}{selectedText}{Environment.NewLine}```";
+        string replacement = $"{CodeBlockMarker}{Environment.NewLine}{selectedText}{Environment.NewLine}{CodeBlockMarker}";
         ReplaceSelection(replacement, replacement.Length);
-        StatusText.Text = "Inserted code block";
+        StatusText.Text = StatusCodeBlockInserted;
     }
 
     private void HorizontalRuleButton_Click(object? sender, RoutedEventArgs e)
     {
-        string replacement = $"{Environment.NewLine}---{Environment.NewLine}";
+        string replacement = $"{Environment.NewLine}{HorizontalRuleMarker}{Environment.NewLine}";
         ReplaceSelection(replacement, replacement.Length);
-        StatusText.Text = "Inserted horizontal rule";
+        StatusText.Text = StatusHorizontalRuleInserted;
     }
 
     private void BulletListButton_Click(object? sender, RoutedEventArgs e)
     {
-        PrefixSelectedLines("- ");
-        StatusText.Text = "Inserted bullet list markers";
+        PrefixSelectedLines(BulletListPrefix);
+        StatusText.Text = StatusBulletListInserted;
     }
 
     private void NumberedListButton_Click(object? sender, RoutedEventArgs e)
     {
-        TransformSelectedLinesWithIndex((line, index) => $"{index + 1}. {line}", "list item");
-        StatusText.Text = "Inserted numbered list markers";
+        TransformSelectedLinesWithIndex((line, index) => $"{index + 1}. {line}", ListItemPlaceholder);
+        StatusText.Text = StatusNumberedListInserted;
     }
 
     private void QuoteButton_Click(object? sender, RoutedEventArgs e)
     {
-        PrefixSelectedLines("> ");
-        StatusText.Text = "Inserted quote markers";
+        PrefixSelectedLines(QuotePrefix);
+        StatusText.Text = StatusQuoteInserted;
     }
 
     private void LinkButton_Click(object? sender, RoutedEventArgs e)
     {
-        string selectedText = string.IsNullOrWhiteSpace(EditorTextBox.SelectedText) ? "link text" : EditorTextBox.SelectedText;
-        string replacement = $"[{selectedText}](https://example.com)";
-        ReplaceSelection(replacement, replacement.IndexOf("https://example.com", StringComparison.Ordinal));
-        StatusText.Text = "Inserted markdown link";
+        string selectedText = string.IsNullOrWhiteSpace(EditorTextBox.SelectedText) ? LinkTextPlaceholder : EditorTextBox.SelectedText;
+        string replacement = $"[{selectedText}]({LinkUrlPlaceholder})";
+        ReplaceSelection(replacement, replacement.IndexOf(LinkUrlPlaceholder, StringComparison.Ordinal));
+        StatusText.Text = StatusLinkInserted;
     }
 
     private void ImageButton_Click(object? sender, RoutedEventArgs e)
     {
-        string selectedText = string.IsNullOrWhiteSpace(EditorTextBox.SelectedText) ? "alt text" : EditorTextBox.SelectedText;
-        string replacement = $"![{selectedText}](https://example.com/image.png)";
-        ReplaceSelection(replacement, replacement.IndexOf("https://example.com/image.png", StringComparison.Ordinal));
-        StatusText.Text = "Inserted markdown image";
+        string selectedText = string.IsNullOrWhiteSpace(EditorTextBox.SelectedText) ? ImageAltPlaceholder : EditorTextBox.SelectedText;
+        string replacement = $"![{selectedText}]({ImageUrlPlaceholder})";
+        ReplaceSelection(replacement, replacement.IndexOf(ImageUrlPlaceholder, StringComparison.Ordinal));
+        StatusText.Text = StatusImageInserted;
     }
 
+    /// <summary>
+    /// Wraps the selected text (or a placeholder) with markdown syntax markers.
+    /// </summary>
+    /// <param name="marker">The markdown syntax to wrap with (e.g., "**" for bold).</param>
+    /// <param name="placeholder">Text to use if no selection exists.</param>
     private void WrapSelection(string marker, string placeholder)
     {
         string selected = EditorTextBox.SelectedText;
@@ -593,6 +697,9 @@ public partial class MainWindow : Window
         TransformSelectedLines(line => $"{prefix}{line}", "text");
     }
 
+    /// <summary>
+    /// Transforms each line of selected text using the provided function.
+    /// </summary>
     private void TransformSelectedLines(Func<string, string> transformer, string fallbackText)
     {
         string selected = EditorTextBox.SelectedText;
@@ -659,15 +766,17 @@ public partial class MainWindow : Window
         UpdateViewVisibility();
     }
 
+    /// <summary>
+    /// Updates UI visibility and layout based on which views are enabled.
+    /// Supports split view, markdown-only, and preview-only modes.
+    /// </summary>
     private void UpdateViewVisibility()
     {
         bool showEditor = ViewMarkdownMenuItem.IsChecked;
         bool showPreview = ViewPreviewMenuItem.IsChecked;
 
-        // Update visibility and column widths
         if (showEditor && showPreview)
         {
-            // Both visible - split view
             EditorBorder.Visibility = Visibility.Visible;
             ViewSplitter.Visibility = Visibility.Visible;
             PreviewBorder.Visibility = Visibility.Visible;
@@ -677,7 +786,6 @@ public partial class MainWindow : Window
         }
         else if (showEditor)
         {
-            // Markdown only
             EditorBorder.Visibility = Visibility.Visible;
             ViewSplitter.Visibility = Visibility.Collapsed;
             PreviewBorder.Visibility = Visibility.Collapsed;
@@ -696,7 +804,6 @@ public partial class MainWindow : Window
             PreviewColumn.Width = new GridLength(1, GridUnitType.Star);
         }
 
-        // Show/hide editor-specific toolbar buttons
         Visibility editorToolsVisibility = showEditor ? Visibility.Visible : Visibility.Collapsed;
         ToolbarSeparator1.Visibility = editorToolsVisibility;
         ToolbarBoldButton.Visibility = editorToolsVisibility;
@@ -774,7 +881,7 @@ public partial class MainWindow : Window
         try
         {
             string filePath = new Uri(uri).LocalPath;
-            if (Path.GetExtension(filePath).Equals(".md", StringComparison.OrdinalIgnoreCase))
+            if (Path.GetExtension(filePath).Equals(MarkdownExtension, StringComparison.OrdinalIgnoreCase))
             {
                 string content = File.ReadAllText(filePath);
                 EditorTextBox.Text = content;
@@ -789,15 +896,16 @@ public partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Handles drag-over events to show appropriate cursor for .md file drops.
+    /// </summary>
     private void HandleDragOver(DragEventArgs e)
     {
-        // Check if the drag data contains files
         if (e.Data.GetDataPresent(DataFormats.FileDrop))
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-            // Check if it's a single .md file
-            if (files.Length == 1 && Path.GetExtension(files[0]).Equals(".md", StringComparison.OrdinalIgnoreCase))
+            if (files.Length == 1 && Path.GetExtension(files[0]).Equals(MarkdownExtension, StringComparison.OrdinalIgnoreCase))
             {
                 e.Effects = DragDropEffects.Copy;
                 e.Handled = true;
@@ -809,9 +917,11 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
+    /// <summary>
+    /// Handles file drop events to open .md files in the editor.
+    /// </summary>
     private async void HandleFileDrop(DragEventArgs e)
     {
-        // Always mark as handled to prevent default behavior
         e.Handled = true;
 
         try
@@ -820,7 +930,7 @@ public partial class MainWindow : Window
             {
                 string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
 
-                if (files.Length == 1 && Path.GetExtension(files[0]).Equals(".md", StringComparison.OrdinalIgnoreCase))
+                if (files.Length == 1 && Path.GetExtension(files[0]).Equals(MarkdownExtension, StringComparison.OrdinalIgnoreCase))
                 {
                     string filePath = files[0];
                     string content = await File.ReadAllTextAsync(filePath);

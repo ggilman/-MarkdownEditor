@@ -1,56 +1,56 @@
-# Markdown Utils - Technical Architecture
+# Markdown Editor - Technical Architecture
 
 ## Overview
 
-Markdown Utils is a WPF desktop application built on .NET 9 that provides a rich Markdown editing experience with live preview and high-fidelity Word export capabilities.
+Markdown Editor is a WPF desktop application built on .NET 9 that provides a rich Markdown editing experience with live preview and high-fidelity Word export capabilities.
 
 ## Architecture Diagram
 
 ```
-???????????????????????????????????????????????????????????????
-?                         MainWindow                          ?
-?  ????????????????????           ?????????????????????????  ?
-?  ?  Markdown Editor ?           ?  Formatted Preview    ?  ?
-?  ?   (TextBox)      ?  ??????   ?   (WebBrowser)        ?  ?
-?  ?                  ?           ?                       ?  ?
-?  ?  - Toolbar       ?           ?  - HTML Rendering     ?  ?
-?  ?  - Shortcuts     ?           ?  - CSS Styling        ?  ?
-?  ????????????????????           ?????????????????????????  ?
-?           ?                                 ?              ?
-?           ?                                 ?              ?
-??????????????????????????????????????????????????????????????
-            ?                                 ?
-            ?                                 ?
-    ?????????????????               ???????????????????
-    ?  File I/O     ?               ? MarkdownConverter?
-    ?  - Save .md   ?               ?  (Markdig)      ?
-    ?  - Import .md ?               ?  - Parse MD     ?
-    ?  - Export     ?               ?  - Generate HTML?
-    ?????????????????               ???????????????????
-            ?
-            ?
-    ??????????????????????????????????????????
-    ?         DocxExporter                   ?
-    ?  ????????????????????????????????????  ?
-    ?  ?  Markdig Parsing                 ?  ?
-    ?  ?  - Parse markdown to AST         ?  ?
-    ?  ?  - Block elements (H, P, List)   ?  ?
-    ?  ?  - Inline elements (Bold, Code)  ?  ?
-    ?  ????????????????????????????????????  ?
-    ?                 ?                       ?
-    ?  ????????????????????????????????????  ?
-    ?  ?  OpenXML Generation              ?  ?
-    ?  ?  - Document structure            ?  ?
-    ?  ?  - Styles (Title, Headings)      ?  ?
-    ?  ?  - Numbering (Bullets, Numbers)  ?  ?
-    ?  ?  - Paragraphs & Runs             ?  ?
-    ?  ????????????????????????????????????  ?
-    ?                 ?                       ?
-    ???????????????????????????????????????????
-                      ?
-              ?????????????????
-              ?  .docx File   ?
-              ?????????????????
+┌─────────────────────────────────────────────────────────────┐
+│                         MainWindow                          │
+│  ┌──────────────────┐           ┌──────────────────────┐    │
+│  │  Markdown Editor │           │  Formatted Preview   │    │
+│  │   (TextBox)      │  ◄────►   │   (WebBrowser)       │    │
+│  │                  │           │                      │    │
+│  │  - Toolbar       │           │  - HTML Rendering    │    │
+│  │  - Shortcuts     │           │  - CSS Styling       │    │
+│  └──────────────────┘           └──────────────────────┘    │
+│           │                                 │               │
+│           │                                 │               │
+└───────────┼─────────────────────────────────┼───────────────┘
+            │                                 │
+            │                                 │
+    ┌───────┴──────┐               ┌──────────┴────────┐
+    │  File I/O    │               │ MarkdownConverter │
+    │  - Save .md  │               │  (Markdig)        │
+    │  - Import .md│               │  - Parse MD       │
+    │  - Export    │               │  - Generate HTML  │
+    └───────┬──────┘               └───────────────────┘
+            │
+            │
+    ┌───────┴────────────────────────────────┐
+    │         DocxExporter                   │
+    │  ┌──────────────────────────────────┐  │
+    │  │  Markdig Parsing                 │  │
+    │  │  - Parse markdown to AST         │  │
+    │  │  - Block elements (H, P, List)   │  │
+    │  │  - Inline elements (Bold, Code)  │  │
+    │  └─────────────────┬────────────────┘  │
+    │                    │                   │
+    │  ┌─────────────────┴────────────────┐  │
+    │  │  OpenXML Generation              │  │
+    │  │  - Document structure            │  │
+    │  │  - Styles (Title, Headings)      │  │
+    │  │  - Numbering (Bullets, Numbers)  │  │
+    │  │  - Paragraphs & Runs             │  │
+    │  └─────────────────┬────────────────┘  │
+    │                    │                   │
+    └────────────────────┼───────────────────┘
+                         │
+                 ┌───────┴──────┐
+                 │  .docx File  │
+                 └──────────────┘
 ```
 
 ## Component Details
@@ -119,28 +119,28 @@ var pipeline = new MarkdownPipelineBuilder()
 
 ```
 Markdown Text
-     ?
-     ?
+     │
+     ▼
 [Markdig Parse]
-     ?
-     ?
+     │
+     ▼
 Markdown AST (Abstract Syntax Tree)
-     ?
-     ?
+     │
+     ▼
 [Traverse Blocks]
-     ?
-     ???? HeadingBlock      ? CreateHeadingParagraph
-     ???? ParagraphBlock    ? CreateParagraph
-     ???? ListBlock         ? AppendList
-     ???? TableBlock        ? CreateTable
-     ???? CodeBlock         ? CreateCodeParagraph
-     ???? QuoteBlock        ? CreateQuoteParagraph
-     ???? ThematicBreak     ? CreateHorizontalRule
-     ?
-     ?
+     │
+     ├─► HeadingBlock      → CreateHeadingParagraph
+     ├─► ParagraphBlock    → CreateParagraph
+     ├─► ListBlock         → AppendList
+     ├─► TableBlock        → CreateTable
+     ├─► CodeBlock         → CreateCodeParagraph
+     ├─► QuoteBlock        → CreateQuoteParagraph
+     └─► ThematicBreak     → CreateHorizontalRule
+     │
+     ▼
 OpenXML Elements (Paragraph, Run, Table)
-     ?
-     ?
+     │
+     ▼
 .docx File
 ```
 
@@ -213,32 +213,32 @@ The `AppendInlines` method recursively walks the inline tree and creates appropr
 
 ### Editing Flow
 ```
-User types ? TextBox.TextChanged
-    ?
+User types → TextBox.TextChanged
+    │
 RenderPreview()
-    ?
+    │
 MarkdownConverter.ConvertToHtml()
-    ?
+    │
 WebBrowser.NavigateToString(html)
 ```
 
 ### Export Flow
 ```
-User clicks Export ? ExportButton_Click
-    ?
+User clicks Export → ExportButton_Click
+    │
 Read checkbox options (autoNumber, useTitleStyle)
-    ?
+    │
 ShowSaveFileDialog (suggests filename from first heading)
-    ?
+    │
 DocxExporter.ExportFromMarkdown(markdown, path, options)
-    ?
-Markdig.Parse(markdown) ? AST
-    ?
+    │
+Markdig.Parse(markdown) → AST
+    │
 EnsureStylesPart + EnsureNumberingPart
-    ?
+    │
 For each block in AST:
-    AppendBlock ? creates OpenXML elements
-    ?
+    AppendBlock → creates OpenXML elements
+    │
 Document.Save()
 ```
 
@@ -265,13 +265,13 @@ if (autoNumberHeadings && isFirstInline && inline is LiteralInline literal)
 ### # as Title
 
 **When enabled**:
-- Markdown level 1 ? Word "Title" style (no numbering)
-- Markdown level 2+ ? Word "Heading 1-5" styles
+- Markdown level 1 → Word "Title" style (no numbering)
+- Markdown level 2+ → Word "Heading 1-5" styles
 - Numbering starts at level 2 (numberingLevel = level - 2)
 
 **When disabled**:
-- Markdown level 1 ? Word "Heading 1" style
-- Markdown level 2+ ? Word "Heading 2-6" styles  
+- Markdown level 1 → Word "Heading 1" style
+- Markdown level 2+ → Word "Heading 2-6" styles  
 - Numbering starts at level 1 (numberingLevel = level - 1)
 
 **Implementation**:
@@ -294,13 +294,13 @@ else
 
 ```
 Normal (base)
-??? Title (if useTitleStyle)
-??? Heading 1
-??? Heading 2
-??? Heading 3
-??? Heading 4
-??? Heading 5
-??? CodeBlock (custom)
+├─ Title (if useTitleStyle)
+├─ Heading 1
+├─ Heading 2
+├─ Heading 3
+├─ Heading 4
+├─ Heading 5
+└─ CodeBlock (custom)
 ```
 
 ### Style Properties
@@ -495,7 +495,7 @@ Normal (base)
 
 ## Conclusion
 
-Markdown Utils demonstrates a clean separation of concerns:
+Markdown Editor demonstrates a clean separation of concerns:
 - **UI Layer**: WPF/XAML for user interaction
 - **Conversion Layer**: Markdig for parsing, custom HTML generation
 - **Export Layer**: OpenXML for high-fidelity Word export

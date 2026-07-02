@@ -19,18 +19,138 @@ using WTable = DocumentFormat.OpenXml.Wordprocessing.Table;
 using Level = DocumentFormat.OpenXml.Wordprocessing.Level;
 using NumberingFormat = DocumentFormat.OpenXml.Wordprocessing.NumberingFormat;
 
-namespace MarkdownUtilsApp;
+namespace MarkdownEditor;
 
+/// <summary>
+/// Exports markdown documents to Word (.docx) format using OpenXML.
+/// Supports headings, lists, tables, code blocks, and inline formatting with high fidelity.
+/// </summary>
 internal static class DocxExporter
 {
+    // Page dimensions (in twips: 1/20 of a point, 1/1440 of an inch)
+    private const int PageWidthTwips = 12240;  // 8.5 inches
+    private const int PageHeightTwips = 15840; // 11 inches
+    private const int PageMarginTwips = 1440;   // 1 inch
     private const int PageContentWidthTwips = 9360;
-    private const int BaseNumberingIdForLists = 10; // Start list numbering IDs at 10 to avoid conflicts
+
+    // Numbering IDs
+    private const int BaseNumberingIdForLists = 10;
+    private const int AbstractNumBulletList = 1;
+    private const int AbstractNumNumberedList = 2;
+    private const int AbstractNumHeadingNumbering = 3;
+
+    // Spacing values (twips)
+    private const string ParagraphSpacingAfter = "200";    // 10pt
+    private const string ParagraphLineSpacing = "360";     // 18pt
+    private const string ListItemSpacingAfter = "120";    // 6pt
+    private const string HeadingSpacingBefore = "240";    // 12pt
+    private const string HeadingSpacingAfter = "120";     // 6pt
+    private const string QuoteSpacingAfter = "120";       // 6pt
+    private const string CodeHeaderSpacingBefore = "120";  // 6pt
+    private const string CodeHeaderSpacingAfter = "40";    // 2pt
+    private const string CodeBlockSpacingBefore = "120";   // 6pt
+    private const string CodeBlockSpacingAfter = "120";    // 6pt
+    private const string CodeBlockLineSpacing = "276";     // 13.8pt
+
+    // Indentation values (twips)
+    private const int IndentPerLevel = 360;        // 0.25 inch per level
+    private const int BaseListIndent = 720;        // 0.5 inch
+    private const int HangingIndent = 360;         // 0.25 inch
+    private const int QuoteIndentLeft = 720;       // 0.5 inch
+    private const int TaskListIndentHanging = 240; // Checkbox indent
+    private const string CodeBlockIndentLeft = "360";   // 0.25 inch
+    private const string CodeBlockIndentRight = "120";  // ~0.08 inch
+
+    // Font settings
+    private const string CodeFontName = "Consolas";
+    private const string CodeFontSize = "20";      // 10pt (half-points)
+    private const string CodeHeaderFontName = "Calibri";
+
+    // Color values
+    private const string HeadingColorBlue = "2E74B5";      // Title and H1-H2
+    private const string HeadingColorDarkBlue = "1F4D78";  // H3-H5
+    private const string CodeBackgroundGray = "F3F3F3";
+    private const string CodeBlockBorderGray = "D8D8D8";
+    private const string CodeHeaderBackgroundDark = "333333";
+    private const string CodeHeaderForegroundLight = "F2F2F2";
+    private const string QuoteBorderGray = "999999";
+    private const string TableBorderGray = "CCCCCC";
+    private const string HyperlinkColor = "0563C1";        // Standard blue
+    private const string QuoteTextGray = "444444";
+
+    // Font sizes (half-points: size * 2)
+    private const string TitleFontSize = "52";     // 26pt
+    private const string Heading1FontSize = "32";  // 16pt
+    private const string Heading2FontSize = "26";  // 13pt
+    private const string Heading3FontSize = "24";  // 12pt
+    private const string Heading4FontSize = "22";  // 11pt
+    private const string Heading5FontSize = "20";  // 10pt
+    private const string CodeHeaderFontSize = "18";  // 9pt
+
+    // Character spacing
+    private const string TitleCharacterSpacing = "-10";  // Slightly condensed
+
+    // Border widths (eighths of a point)
+    private const uint QuoteBorderWidth = 24;            // 3pt
+    private const uint CodeBlockBorderWidth = 4;         // 0.5pt
+    private const uint TableBorderWidth = 4;              // 0.5pt
+    private const uint TableOuterBorderWidth = 8;        // 1pt
+    private const uint TableInnerBorderWidth = 6;        // 0.75pt
+    private const uint HorizontalRuleBorderWidth = 6;    // 0.75pt
+
+    // Task list markers
+    private const string TaskCheckedMarker = "☑ ";
+    private const string TaskUncheckedMarker = "☐ ";
+
+    // Regex patterns
+    private const string HeadingNumberPattern = @"^\s*\d+(\.\d+)*\.?\s*";
+    private const string LanguageClassPrefix = "language-";
+
+    // Style IDs
+    private const string StyleIdNormal = "Normal";
+    private const string StyleIdTitle = "Title";
+    private const string StyleIdHeading = "Heading";
+    private const string StyleIdCodeBlock = "CodeBlock";
+    private const string StyleIdQuote = "Quote";
+    private const string StyleIdHyperlink = "Hyperlink";
+
+    // Table and cell constants
+    private const string TableAutoWidthValue = "0";
+
+    // List numbering constants
+    private const int MaxListLevels = 9;
+    private const int MaxHeadingLevels = 5;
+    private const int StartNumberValue = 1;
+    private const string ListHangingIndent = "360";
+
+    // Bullet characters for different nesting levels
+    private const string BulletCharPrimary = "\uF0B7";   // Standard bullet
+    private const string BulletCharSecondary = "o";      // Circle
+    private const string BulletCharTertiary = "\uF0A7";  // Square
+
+    // Font names for bullets
+    private const string BulletFontSymbol = "Symbol";
+    private const string BulletFontCourier = "Courier New";
+
+    // Style priorities
+    private const int HeadingStylePriority = 9;
+    private const int TitleStylePriority = 10;
+
+    // Zero spacing value
+    private const string ZeroSpacing = "0";
 
     private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .DisableHtml()
         .Build();
 
+    /// <summary>
+    /// Exports markdown text to a Word document (.docx) file.
+    /// </summary>
+    /// <param name="markdown">The markdown text to export.</param>
+    /// <param name="outputPath">The file path where the .docx will be created.</param>
+    /// <param name="autoNumberHeadings">If true, strips manual numbers from headings and applies Word's multilevel numbering.</param>
+    /// <param name="useTitleStyle">If true, maps markdown # to Word's Title style; otherwise uses Heading 1.</param>
     public static void ExportFromMarkdown(string markdown, string outputPath, bool autoNumberHeadings = true, bool useTitleStyle = true)
     {
         if (string.IsNullOrWhiteSpace(outputPath))
@@ -66,8 +186,8 @@ internal static class DocxExporter
         }
 
         body.Append(new SectionProperties(
-            new PageSize { Width = 12240, Height = 15840 },
-            new PageMargin { Top = 1440, Right = 1440, Bottom = 1440, Left = 1440 }
+            new PageSize { Width = (uint)PageWidthTwips, Height = (uint)PageHeightTwips },
+            new PageMargin { Top = PageMarginTwips, Right = PageMarginTwips, Bottom = PageMarginTwips, Left = PageMarginTwips }
         ));
 
         mainPart.Document.Save();
@@ -145,11 +265,8 @@ internal static class DocxExporter
 
         if (numberingPart?.Numbering != null)
         {
-            // Determine which abstract numbering definition to use
-            // AbstractNum 1 = bullets, AbstractNum 2 = numbered
-            int abstractNumId = list.IsOrdered ? 2 : 1;
+            int abstractNumId = list.IsOrdered ? AbstractNumNumberedList : AbstractNumBulletList;
 
-            // Create a new numbering instance for this specific list
             numberingId = BaseNumberingIdForLists + listNumberingCounter++;
             NumberingInstance newInstance = new() { NumberID = numberingId };
             newInstance.Append(new AbstractNumId { Val = abstractNumId });
@@ -158,12 +275,8 @@ internal static class DocxExporter
         }
         else
         {
-            // Fallback: use the old static numbering IDs if numbering part isn't available yet
-            numberingId = list.IsOrdered ? 2 : 1;
+            numberingId = list.IsOrdered ? AbstractNumNumberedList : AbstractNumBulletList;
         }
-
-        // Debug: Log what type of list we're processing
-        System.Diagnostics.Debug.WriteLine($"Processing list: IsOrdered={list.IsOrdered}, BulletType={list.BulletType}, OrderedStart={list.OrderedStart}, NumberingId={numberingId}");
 
         foreach (ListItemBlock item in list.OfType<ListItemBlock>())
         {
@@ -184,20 +297,18 @@ internal static class DocxExporter
 
                     if (taskState.HasValue)
                     {
-                        // For task lists, use manual checkbox markers since Word doesn't have native task list support
-                        string marker = taskState.Value ? "☑ " : "☐ ";
+                        string marker = taskState.Value ? TaskCheckedMarker : TaskUncheckedMarker;
                         listParagraph = CreateListItemParagraph(
                             marker,
                             paragraphBlock.Inline,
                             mainPart,
                             hyperlinkRelationshipIds,
-                            indentLeftTwips: 360 * (depth + 1),
-                            indentHangingTwips: 240
+                            indentLeftTwips: IndentPerLevel * (depth + 1),
+                            indentHangingTwips: TaskListIndentHanging
                         );
                     }
                     else if (isFirstParagraphInItem)
                     {
-                        // First paragraph in list item uses Word's native numbering
                         listParagraph = CreateNativeListItemParagraph(
                             paragraphBlock.Inline,
                             mainPart,
@@ -209,7 +320,6 @@ internal static class DocxExporter
                     }
                     else
                     {
-                        // Continuation paragraphs in multi-paragraph list items
                         listParagraph = CreateNativeListItemParagraph(
                             paragraphBlock.Inline,
                             mainPart,
@@ -228,8 +338,8 @@ internal static class DocxExporter
                     {
                         if (taskState.HasValue)
                         {
-                            string marker = taskState.Value ? "☑ " : "☐ ";
-                            body.Append(CreateParagraphFromText(marker + lineText, indentLeftTwips: 360 * (depth + 1), indentHangingTwips: 240));
+                            string marker = taskState.Value ? TaskCheckedMarker : TaskUncheckedMarker;
+                            body.Append(CreateParagraphFromText(marker + lineText, indentLeftTwips: IndentPerLevel * (depth + 1), indentHangingTwips: TaskListIndentHanging));
                         }
                         else
                         {
@@ -279,7 +389,7 @@ internal static class DocxExporter
     {
         Paragraph paragraph = new();
         ParagraphProperties props = new(
-            new SpacingBetweenLines { After = "200", Line = "360", LineRule = LineSpacingRuleValues.Auto }
+            new SpacingBetweenLines { After = ParagraphSpacingAfter, Line = ParagraphLineSpacing, LineRule = LineSpacingRuleValues.Auto }
         );
 
         if (!string.IsNullOrWhiteSpace(paragraphStyleId))
@@ -302,7 +412,7 @@ internal static class DocxExporter
     {
         Paragraph paragraph = new();
         ParagraphProperties props = new(
-            new SpacingBetweenLines { After = "120", Line = "360", LineRule = LineSpacingRuleValues.Auto },
+            new SpacingBetweenLines { After = ListItemSpacingAfter, Line = ParagraphLineSpacing, LineRule = LineSpacingRuleValues.Auto },
             new Indentation 
             { 
                 Left = indentLeftTwips.ToString(), 
@@ -312,10 +422,8 @@ internal static class DocxExporter
 
         paragraph.Append(props);
 
-        // Add the bullet/number marker as plain text
         paragraph.Append(new Run(new Text(marker) { Space = SpaceProcessingModeValues.Preserve }));
 
-        // Add the inline formatted content
         if (inline is not null && mainPart is not null && hyperlinkRelationshipIds is not null)
         {
             AppendInlines(paragraph, inline, mainPart, hyperlinkRelationshipIds);
@@ -328,7 +436,7 @@ internal static class DocxExporter
     {
         Paragraph paragraph = new();
         ParagraphProperties props = new(
-            new SpacingBetweenLines { After = "120", Line = "360", LineRule = LineSpacingRuleValues.Auto },
+            new SpacingBetweenLines { After = ListItemSpacingAfter, Line = ParagraphLineSpacing, LineRule = LineSpacingRuleValues.Auto },
             new NumberingProperties(
                 new NumberingLevelReference { Val = levelIndex },
                 new NumberingId { Val = numberingId }
@@ -337,7 +445,6 @@ internal static class DocxExporter
 
         paragraph.Append(props);
 
-        // Add the inline formatted content
         if (inline is not null && mainPart is not null && hyperlinkRelationshipIds is not null)
         {
             AppendInlines(paragraph, inline, mainPart, hyperlinkRelationshipIds);
@@ -350,7 +457,7 @@ internal static class DocxExporter
     {
         Paragraph paragraph = new();
         ParagraphProperties props = new(
-            new SpacingBetweenLines { After = "120", Line = "360", LineRule = LineSpacingRuleValues.Auto },
+            new SpacingBetweenLines { After = ListItemSpacingAfter, Line = ParagraphLineSpacing, LineRule = LineSpacingRuleValues.Auto },
             new NumberingProperties(
                 new NumberingLevelReference { Val = levelIndex },
                 new NumberingId { Val = numberingId }
@@ -442,6 +549,12 @@ internal static class DocxExporter
         return paragraph;
     }
 
+    /// <summary>
+    /// Creates a Word paragraph for a markdown heading with appropriate style and optional numbering.
+    /// </summary>
+    /// <param name="heading">The markdown heading block.</param>
+    /// <param name="autoNumberHeadings">If true, strips manual numbers and applies automatic numbering.</param>
+    /// <param name="useTitleStyle">If true, H1 uses Title style instead of Heading 1.</param>
     private static Paragraph CreateHeadingParagraph(HeadingBlock heading, bool autoNumberHeadings, bool useTitleStyle)
     {
         int level = Math.Clamp(heading.Level, 1, 6);
@@ -459,18 +572,18 @@ internal static class DocxExporter
 
         if (useTitleStyle)
         {
-            styleId = level == 1 ? "Title" : $"Heading{level - 1}";
+            styleId = level == 1 ? StyleIdTitle : $"{StyleIdHeading}{level - 1}";
             numberingLevel = level - 2; // level 2 -> 0, level 3 -> 1, etc.
         }
         else
         {
-            styleId = $"Heading{level}";
+            styleId = $"{StyleIdHeading}{level}";
             numberingLevel = level - 1; // level 1 -> 0, level 2 -> 1, etc.
         }
 
         ParagraphProperties props = new(
             new ParagraphStyleId { Val = styleId },
-            new SpacingBetweenLines { Before = "240", After = "120" }
+            new SpacingBetweenLines { Before = HeadingSpacingBefore, After = HeadingSpacingAfter }
         );
 
         // Add automatic numbering if enabled and appropriate
@@ -498,7 +611,7 @@ internal static class DocxExporter
                 if (autoNumberHeadings && isFirstInline && inline is LiteralInline literal)
                 {
                     string text = literal.Content.ToString();
-                    string strippedText = System.Text.RegularExpressions.Regex.Replace(text, @"^\s*\d+(\.\d+)*\.?\s*", "");
+                    string strippedText = System.Text.RegularExpressions.Regex.Replace(text, HeadingNumberPattern, "");
                     if (strippedText != text)
                     {
                         if (!string.IsNullOrWhiteSpace(strippedText))
@@ -531,8 +644,8 @@ internal static class DocxExporter
             case CodeInline codeInline:
                 paragraph.Append(new Run(
                     new RunProperties(
-                        new RunFonts { Ascii = "Consolas", HighAnsi = "Consolas" },
-                        new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = "F3F3F3" }
+                        new RunFonts { Ascii = CodeFontName, HighAnsi = CodeFontName },
+                        new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = CodeBackgroundGray }
                     ),
                     new Text(codeInline.Content ?? string.Empty) { Space = SpaceProcessingModeValues.Preserve }
                 ));
@@ -590,17 +703,17 @@ internal static class DocxExporter
     {
         Paragraph paragraph = new(
             new ParagraphProperties(
-                new ParagraphStyleId { Val = "Quote" },
-                new Indentation { Left = "720" },
-                new SpacingBetweenLines { After = "120" },
+                new ParagraphStyleId { Val = StyleIdQuote },
+                new Indentation { Left = QuoteIndentLeft.ToString() },
+                new SpacingBetweenLines { After = QuoteSpacingAfter },
                 new ParagraphBorders(
-                    new LeftBorder { Val = BorderValues.Single, Size = 24, Color = "999999" }
+                    new LeftBorder { Val = BorderValues.Single, Size = QuoteBorderWidth, Color = QuoteBorderGray }
                 )
             )
         );
         paragraph.Append(CreateTextRunWithBreaks(
             text ?? string.Empty,
-            new RunProperties(new Color { Val = "444444" })
+            new RunProperties(new Color { Val = QuoteTextGray })
         ));
         return paragraph;
     }
@@ -609,13 +722,13 @@ internal static class DocxExporter
     {
         Paragraph paragraph = new(
             new ParagraphProperties(
-                new SpacingBetweenLines { Before = "120", After = "120" },
+                new SpacingBetweenLines { Before = ListItemSpacingAfter, After = ListItemSpacingAfter },
                 new ParagraphBorders(
                     new BottomBorder 
                     { 
                         Val = BorderValues.Single, 
-                        Size = 6, 
-                        Color = "999999" 
+                        Size = HorizontalRuleBorderWidth, 
+                        Color = QuoteBorderGray 
                     }
                 )
             ),
@@ -631,17 +744,17 @@ internal static class DocxExporter
         {
             body.Append(new Paragraph(
                 new ParagraphProperties(
-                    new ParagraphStyleId { Val = "CodeBlock" },
-                    new SpacingBetweenLines { Before = "120", After = "40" },
-                    new Indentation { Left = "360", Right = "120" },
-                    new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = "333333" }
+                    new ParagraphStyleId { Val = StyleIdCodeBlock },
+                    new SpacingBetweenLines { Before = CodeHeaderSpacingBefore, After = CodeHeaderSpacingAfter },
+                    new Indentation { Left = CodeBlockIndentLeft, Right = CodeBlockIndentRight },
+                    new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = CodeHeaderBackgroundDark }
                 ),
                 new Run(
                     new RunProperties(
                         new Bold(),
-                        new Color { Val = "F2F2F2" },
-                        new RunFonts { Ascii = "Calibri", HighAnsi = "Calibri" },
-                        new FontSize { Val = "18" }
+                        new Color { Val = CodeHeaderForegroundLight },
+                        new RunFonts { Ascii = CodeHeaderFontName, HighAnsi = CodeHeaderFontName },
+                        new FontSize { Val = CodeHeaderFontSize }
                     ),
                     new Text(language) { Space = SpaceProcessingModeValues.Preserve }
                 )
@@ -655,22 +768,22 @@ internal static class DocxExporter
     {
         Paragraph paragraph = new(
             new ParagraphProperties(
-                new ParagraphStyleId { Val = "CodeBlock" },
-                new SpacingBetweenLines { Before = "120", After = "120", Line = "276", LineRule = LineSpacingRuleValues.Auto },
-                new Indentation { Left = "360", Right = "120" },
-                new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = "F3F3F3" },
+                new ParagraphStyleId { Val = StyleIdCodeBlock },
+                new SpacingBetweenLines { Before = CodeBlockSpacingBefore, After = CodeBlockSpacingAfter, Line = CodeBlockLineSpacing, LineRule = LineSpacingRuleValues.Auto },
+                new Indentation { Left = CodeBlockIndentLeft, Right = CodeBlockIndentRight },
+                new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = CodeBackgroundGray },
                 new ParagraphBorders(
-                    new TopBorder { Val = BorderValues.Single, Size = 4, Color = "D8D8D8" },
-                    new BottomBorder { Val = BorderValues.Single, Size = 4, Color = "D8D8D8" },
-                    new LeftBorder { Val = BorderValues.Single, Size = 4, Color = "D8D8D8" },
-                    new RightBorder { Val = BorderValues.Single, Size = 4, Color = "D8D8D8" }
+                    new TopBorder { Val = BorderValues.Single, Size = CodeBlockBorderWidth, Color = CodeBlockBorderGray },
+                    new BottomBorder { Val = BorderValues.Single, Size = CodeBlockBorderWidth, Color = CodeBlockBorderGray },
+                    new LeftBorder { Val = BorderValues.Single, Size = CodeBlockBorderWidth, Color = CodeBlockBorderGray },
+                    new RightBorder { Val = BorderValues.Single, Size = CodeBlockBorderWidth, Color = CodeBlockBorderGray }
                 )
             )
         );
 
         paragraph.Append(CreateTextRunWithBreaks(
             code,
-            new RunProperties(new RunFonts { Ascii = "Consolas", HighAnsi = "Consolas" }, new FontSize { Val = "20" })
+            new RunProperties(new RunFonts { Ascii = CodeFontName, HighAnsi = CodeFontName }, new FontSize { Val = CodeFontSize })
         ));
 
         return paragraph;
@@ -693,6 +806,10 @@ internal static class DocxExporter
         return run;
     }
 
+    /// <summary>
+    /// Recursively processes inline elements (bold, italic, code, links) and appends them to a paragraph.
+    /// Preserves all inline formatting when converting from markdown to Word.
+    /// </summary>
     private static void AppendInlines(Paragraph paragraph, ContainerInline inline, MainDocumentPart mainPart, Dictionary<string, string> hyperlinkRelationshipIds)
     {
         AppendInlines(paragraph, inline, mainPart, hyperlinkRelationshipIds, false);
@@ -717,8 +834,8 @@ internal static class DocxExporter
                     break;
                 case CodeInline codeInline:
                     RunProperties codeProps = new(
-                        new RunFonts { Ascii = "Consolas", HighAnsi = "Consolas" },
-                        new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = "F3F3F3" }
+                        new RunFonts { Ascii = CodeFontName, HighAnsi = CodeFontName },
+                        new Shading { Val = ShadingPatternValues.Clear, Color = "auto", Fill = CodeBackgroundGray }
                     );
                     if (forceBold)
                     {
@@ -815,9 +932,9 @@ internal static class DocxExporter
             }
 
             RunProperties linkProps = new(
-                new RunStyle { Val = "Hyperlink" },
+                new RunStyle { Val = StyleIdHyperlink },
                 new Underline { Val = UnderlineValues.Single },
-                new Color { Val = "0563C1" }
+                new Color { Val = HyperlinkColor }
             );
             if (forceBold)
             {
@@ -855,20 +972,24 @@ internal static class DocxExporter
         return CreateTable(table, null, null);
     }
 
+    /// <summary>
+    /// Creates a Word table from a markdown table with borders and formatting.
+    /// Preserves inline formatting in cells and applies bold to headers.
+    /// </summary>
     private static WTable CreateTable(MdTable table, MainDocumentPart? mainPart, Dictionary<string, string>? hyperlinkRelationshipIds)
     {
         WTable wordTable = new();
 
         TableProperties properties = new(
-            new TableWidth { Width = "0", Type = TableWidthUnitValues.Auto },
+            new TableWidth { Width = TableAutoWidthValue, Type = TableWidthUnitValues.Auto },
             new TableLayout { Type = TableLayoutValues.Autofit },
             new TableBorders(
-                new TopBorder { Val = BorderValues.Single, Size = 8, Color = "CCCCCC" },
-                new BottomBorder { Val = BorderValues.Single, Size = 8, Color = "CCCCCC" },
-                new LeftBorder { Val = BorderValues.Single, Size = 8, Color = "CCCCCC" },
-                new RightBorder { Val = BorderValues.Single, Size = 8, Color = "CCCCCC" },
-                new InsideHorizontalBorder { Val = BorderValues.Single, Size = 6, Color = "CCCCCC" },
-                new InsideVerticalBorder { Val = BorderValues.Single, Size = 6, Color = "CCCCCC" }
+                new TopBorder { Val = BorderValues.Single, Size = TableOuterBorderWidth, Color = TableBorderGray },
+                new BottomBorder { Val = BorderValues.Single, Size = TableOuterBorderWidth, Color = TableBorderGray },
+                new LeftBorder { Val = BorderValues.Single, Size = TableOuterBorderWidth, Color = TableBorderGray },
+                new RightBorder { Val = BorderValues.Single, Size = TableOuterBorderWidth, Color = TableBorderGray },
+                new InsideHorizontalBorder { Val = BorderValues.Single, Size = TableInnerBorderWidth, Color = TableBorderGray },
+                new InsideVerticalBorder { Val = BorderValues.Single, Size = TableInnerBorderWidth, Color = TableBorderGray }
             )
         );
         wordTable.Append(properties);
@@ -887,7 +1008,7 @@ internal static class DocxExporter
 
                 WTableCell wordCell = new(
                     new TableCellProperties(
-                        new TableCellWidth { Type = TableWidthUnitValues.Auto, Width = "0" },
+                        new TableCellWidth { Type = TableWidthUnitValues.Auto, Width = TableAutoWidthValue },
                         new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }
                     ),
                     paragraph
@@ -954,6 +1075,10 @@ internal static class DocxExporter
         return string.Join(Environment.NewLine, block.Lines.Lines.Select(l => l.ToString()));
     }
 
+    /// <summary>
+    /// Creates and configures Word styles (Title, Headings, CodeBlock) for the document.
+    /// Styles match the preview appearance with consistent colors and sizing.
+    /// </summary>
     private static void EnsureStylesPart(MainDocumentPart mainPart, bool autoNumberHeadings, bool useTitleStyle)
     {
         StyleDefinitionsPart stylesPart = mainPart.StyleDefinitionsPart ?? mainPart.AddNewPart<StyleDefinitionsPart>();
@@ -992,21 +1117,21 @@ internal static class DocxExporter
         };
 
         style.Append(new StyleName { Val = $"Heading {level}" });
-        style.Append(new BasedOn { Val = "Normal" });
-        style.Append(new NextParagraphStyle { Val = "Normal" });
-        style.Append(new LinkedStyle { Val = $"Heading{level}Char" });
-        style.Append(new UIPriority { Val = 9 });
+        style.Append(new BasedOn { Val = StyleIdNormal });
+        style.Append(new NextParagraphStyle { Val = StyleIdNormal });
+        style.Append(new LinkedStyle { Val = $"{StyleIdHeading}{level}Char" });
+        style.Append(new UIPriority { Val = HeadingStylePriority });
         style.Append(new PrimaryStyle());
 
         // Font sizes for different heading levels
         string fontSize = level switch
         {
-            1 => "32", // 16pt
-            2 => "26", // 13pt
-            3 => "24", // 12pt
-            4 => "22", // 11pt
-            5 => "20", // 10pt
-            _ => "20"  // 10pt
+            1 => Heading1FontSize,
+            2 => Heading2FontSize,
+            3 => Heading3FontSize,
+            4 => Heading4FontSize,
+            5 => Heading5FontSize,
+            _ => Heading5FontSize
         };
 
         // Paragraph properties
@@ -1015,9 +1140,9 @@ internal static class DocxExporter
         paragraphProps.Append(new KeepLines());
         paragraphProps.Append(new SpacingBetweenLines 
         { 
-            Before = "240", 
+            Before = HeadingSpacingBefore, 
             After = "0",
-            Line = "240",
+            Line = HeadingSpacingBefore,
             LineRule = LineSpacingRuleValues.Auto
         });
         paragraphProps.Append(new OutlineLevel { Val = level - 1 });
@@ -1032,9 +1157,9 @@ internal static class DocxExporter
         // Different colors for different heading levels
         string color = level switch
         {
-            1 => "2E74B5", // Dark blue
-            2 => "2E74B5", // Dark blue
-            _ => "1F4D78"  // Darker blue for H3-H6
+            1 => HeadingColorBlue,
+            2 => HeadingColorBlue,
+            _ => HeadingColorDarkBlue
         };
         runProps.Append(new Color { Val = color });
 
@@ -1052,20 +1177,20 @@ internal static class DocxExporter
             Default = false
         };
 
-        style.Append(new StyleName { Val = "Title" });
-        style.Append(new BasedOn { Val = "Normal" });
-        style.Append(new NextParagraphStyle { Val = "Normal" });
-        style.Append(new LinkedStyle { Val = "TitleChar" });
-        style.Append(new UIPriority { Val = 10 });
+        style.Append(new StyleName { Val = StyleIdTitle });
+        style.Append(new BasedOn { Val = StyleIdNormal });
+        style.Append(new NextParagraphStyle { Val = StyleIdNormal });
+        style.Append(new LinkedStyle { Val = $"{StyleIdTitle}Char" });
+        style.Append(new UIPriority { Val = TitleStylePriority });
         style.Append(new PrimaryStyle());
 
         // Paragraph properties
         StyleParagraphProperties paragraphProps = new();
         paragraphProps.Append(new SpacingBetweenLines 
         { 
-            Before = "240", 
-            After = "0",
-            Line = "240",
+            Before = HeadingSpacingBefore, 
+            After = ZeroSpacing,
+            Line = HeadingSpacingBefore,
             LineRule = LineSpacingRuleValues.Auto
         });
         paragraphProps.Append(new ContextualSpacing());
@@ -1074,10 +1199,10 @@ internal static class DocxExporter
         // Run properties - Title is typically larger and different color
         StyleRunProperties runProps = new();
         runProps.Append(new Bold());
-        runProps.Append(new FontSize { Val = "52" }); // 26pt - larger than H1
-        runProps.Append(new FontSizeComplexScript { Val = "52" });
-        runProps.Append(new Color { Val = "2E74B5" }); // Dark blue
-        runProps.Append(new Spacing { Val = -10 }); // Slight character spacing
+        runProps.Append(new FontSize { Val = TitleFontSize });
+        runProps.Append(new FontSizeComplexScript { Val = TitleFontSize });
+        runProps.Append(new Color { Val = HeadingColorBlue });
+        runProps.Append(new Spacing { Val = int.Parse(TitleCharacterSpacing) });
         style.Append(runProps);
 
         return style;
@@ -1085,17 +1210,21 @@ internal static class DocxExporter
 
     private static Style CreateCodeBlockStyle()
     {
-        Style style = new() { Type = StyleValues.Paragraph, StyleId = "CodeBlock", CustomStyle = true };
+        Style style = new() { Type = StyleValues.Paragraph, StyleId = StyleIdCodeBlock, CustomStyle = true };
         style.Append(new StyleName { Val = "Code Block" });
-        style.Append(new BasedOn { Val = "Normal" });
-        style.Append(new NextParagraphStyle { Val = "Normal" });
+        style.Append(new BasedOn { Val = StyleIdNormal });
+        style.Append(new NextParagraphStyle { Val = StyleIdNormal });
         style.Append(new StyleRunProperties(
-            new RunFonts { Ascii = "Consolas", HighAnsi = "Consolas" },
-            new FontSize { Val = "20" }
+            new RunFonts { Ascii = CodeFontName, HighAnsi = CodeFontName },
+            new FontSize { Val = CodeFontSize }
         ));
         return style;
     }
 
+    /// <summary>
+    /// Creates numbering definitions for bullets, numbered lists, and optional heading numbering.
+    /// Each list instance gets a unique ID to prevent Word from continuing numbering across separate lists.
+    /// </summary>
     private static void EnsureNumberingPart(MainDocumentPart mainPart, bool autoNumberHeadings)
     {
         NumberingDefinitionsPart numberingPart = mainPart.NumberingDefinitionsPart ?? mainPart.AddNewPart<NumberingDefinitionsPart>();
@@ -1112,28 +1241,28 @@ internal static class DocxExporter
         AbstractNum abstractBullet = new() { AbstractNumberId = 1 };
         abstractBullet.Append(new MultiLevelType { Val = MultiLevelValues.HybridMultilevel });
 
-        // Define 9 levels for bullet lists
-        for (int i = 0; i < 9; i++)
+        // Define levels for bullet lists
+        for (int i = 0; i < MaxListLevels; i++)
         {
             Level bulletLevel = new() { LevelIndex = i };
             bulletLevel.Append(new NumberingFormat { Val = NumberFormatValues.Bullet });
 
             // Use proper bullet character - this is the character code for the standard bullet
-            string bulletChar = i % 3 == 0 ? "\uF0B7" : i % 3 == 1 ? "o" : "\uF0A7";
+            string bulletChar = i % 3 == 0 ? BulletCharPrimary : i % 3 == 1 ? BulletCharSecondary : BulletCharTertiary;
             bulletLevel.Append(new LevelText { Val = bulletChar });
             bulletLevel.Append(new LevelJustification { Val = LevelJustificationValues.Left });
 
             PreviousParagraphProperties bulletPpr = new();
             bulletPpr.Append(new Indentation 
             { 
-                Left = (720 + (360 * i)).ToString(), 
-                Hanging = "360" 
+                Left = (BaseListIndent + (IndentPerLevel * i)).ToString(), 
+                Hanging = ListHangingIndent 
             });
             bulletLevel.Append(bulletPpr);
 
             NumberingSymbolRunProperties bulletRpr = new();
             // For proper bullet display, use Symbol font for \uF0B7 and \uF0A7, Courier New for 'o'
-            string fontName = bulletChar == "o" ? "Courier New" : "Symbol";
+            string fontName = bulletChar == BulletCharSecondary ? BulletFontCourier : BulletFontSymbol;
             bulletRpr.Append(new RunFonts { Hint = FontTypeHintValues.Default, Ascii = fontName, HighAnsi = fontName });
             bulletLevel.Append(bulletRpr);
 
@@ -1144,11 +1273,11 @@ internal static class DocxExporter
         AbstractNum abstractNumbered = new() { AbstractNumberId = 2 };
         abstractNumbered.Append(new MultiLevelType { Val = MultiLevelValues.HybridMultilevel });
 
-        // Define 9 levels for numbered lists
-        for (int i = 0; i < 9; i++)
+        // Define levels for numbered lists
+        for (int i = 0; i < MaxListLevels; i++)
         {
             Level numberedLevel = new() { LevelIndex = i };
-            numberedLevel.Append(new StartNumberingValue { Val = 1 });
+            numberedLevel.Append(new StartNumberingValue { Val = StartNumberValue });
             numberedLevel.Append(new NumberingFormat { Val = NumberFormatValues.Decimal });
             numberedLevel.Append(new LevelText { Val = $"%{i + 1}." });
             numberedLevel.Append(new LevelJustification { Val = LevelJustificationValues.Left });
@@ -1156,8 +1285,8 @@ internal static class DocxExporter
             PreviousParagraphProperties numberedPpr = new();
             numberedPpr.Append(new Indentation 
             { 
-                Left = (720 + (360 * i)).ToString(), 
-                Hanging = "360" 
+                Left = (BaseListIndent + (IndentPerLevel * i)).ToString(), 
+                Hanging = ListHangingIndent 
             });
             numberedLevel.Append(numberedPpr);
 
@@ -1184,11 +1313,11 @@ internal static class DocxExporter
             AbstractNum abstractHeading = new() { AbstractNumberId = 3 };
             abstractHeading.Append(new MultiLevelType { Val = MultiLevelValues.Multilevel });
 
-            // Define 5 levels for headings (H1-H5)
-            for (int i = 0; i < 5; i++)
+            // Define levels for headings (H1-H5)
+            for (int i = 0; i < MaxHeadingLevels; i++)
             {
                 Level headingLevel = new() { LevelIndex = i };
-                headingLevel.Append(new StartNumberingValue { Val = 1 });
+                headingLevel.Append(new StartNumberingValue { Val = StartNumberValue });
                 headingLevel.Append(new NumberingFormat { Val = NumberFormatValues.Decimal });
 
                 // Build level text: %1. for H1, %1.%2. for H2, %1.%2.%3. for H3, etc.
@@ -1199,8 +1328,8 @@ internal static class DocxExporter
                 PreviousParagraphProperties headingPpr = new();
                 headingPpr.Append(new Indentation 
                 { 
-                    Left = (0).ToString(), // No indent for headings
-                    Hanging = "0" 
+                    Left = ZeroSpacing, // No indent for headings
+                    Hanging = ZeroSpacing 
                 });
                 headingLevel.Append(headingPpr);
 

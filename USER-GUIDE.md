@@ -1,4 +1,4 @@
-# Markdown Utils - User Guide
+﻿# Markdown Editor - User Guide
 
 ## Table of Contents
 1. [Getting Started](#getting-started)
@@ -18,7 +18,7 @@
 
 ### First Launch
 
-When you first open Markdown Utils, you'll see a split-screen interface:
+When you first open Markdown Editor, you'll see a split-screen interface:
 - **Left side**: Markdown editor with a toolbar
 - **Right side**: Live formatted preview of your document
 
@@ -38,30 +38,30 @@ The editor starts with a sample document that demonstrates all supported Markdow
 ### Main Window Layout
 
 ```
-???????????????????????????????????????????????????????????????
-? File  View                                                  ? Menu Bar
-???????????????????????????????????????????????????????????????
-? [New] [Save .md] [Import .md] [Export .docx]               ?
-? ? Auto-number headings  ? # as Title           Status Text  ? Toolbar
-???????????????????????????????????????????????????????????????
-?                          ?                                  ?
-?  Raw Markdown            ?  Formatted Preview (Read Only)   ?
-?  [Formatting Buttons]    ?                                  ?
-?  ??????????????????????? ?  ??????????????????????????????? ?
-?  ?                     ? ?  ?                             ? ?
-?  ?   Editor            ? ?  ?    Preview                  ? ?
-?  ?   TextBox           ? ?  ?    WebBrowser               ? ?
-?  ?                     ? ?  ?                             ? ?
-?  ?                     ? ?  ?                             ? ?
-?  ??????????????????????? ?  ??????????????????????????????? ?
-???????????????????????????????????????????????????????????????
+┌─────────────────────────────────────────────────────────────┐
+│ File  View                                                  │ Menu Bar
+├─────────────────────────────────────────────────────────────┤
+│ [New] [Save .md] [Import .md] [Export .docx]                │
+│ ☑ Auto-number headings  ☑ # as Title           Status Text │ Toolbar
+├─────────────────────────────────────────────────────────────┤
+│                          │                                  │
+│  Raw Markdown            │  Formatted Preview (Read Only)   │
+│  [Formatting Buttons]    │                                  │
+│  ┌───────────────────┐   │  ┌─────────────────────────────┐ │
+│  │                   │   │  │                             │ │
+│  │   Editor          │   │  │    Preview                  │ │
+│  │   TextBox         │   │  │    WebBrowser               │ │
+│  │                   │   │  │                             │ │
+│  │                   │   │  │                             │ │
+│  └───────────────────┘   │  └─────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Menu Bar
 
 **View Menu**:
-- ? **Markdown Editor**: Toggle the left editor pane
-- ? **Formatted Preview**: Toggle the right preview pane
+- ☑ **Markdown Editor**: Toggle the left editor pane
+- ☑ **Formatted Preview**: Toggle the right preview pane
 
 Both options can be checked (split view) or only one (focused view). The app ensures at least one is always visible.
 
@@ -222,10 +222,10 @@ Use three or more dashes on their own line:
 
 The toolbar provides quick access to Markdown syntax. Click a button to insert syntax at the cursor or wrap the selected text.
 
-### Heading Button (H2 ?)
+### Heading Button (H2 ▼)
 
 - **Main button (H2)**: Inserts the currently selected heading level
-- **Dropdown arrow (?)**: Opens a menu to choose H1-H6
+- **Dropdown arrow (▼)**: Opens a menu to choose H1-H6
 - After choosing, the button updates to show the new level (e.g., "H3")
 
 **Usage**:
@@ -348,7 +348,7 @@ Use the **View** menu to customize your workspace:
 
 ### What Gets Exported
 
-? **Fully Supported**:
+✓ **Fully Supported**:
 - All heading levels (H1-H6)
 - Bold, italic, strikethrough, inline code
 - Bullet and numbered lists (with proper Word formatting)
@@ -357,10 +357,10 @@ Use the **View** menu to customize your workspace:
 - Code blocks with monospace font
 - Blockquotes with left border
 - Horizontal rules as actual lines
-- Task lists (rendered as ? and ? checkboxes)
+- Task lists (rendered as ☐ and ☑ checkboxes)
 - Links (clickable in Word)
 
-?? **Partial Support**:
+⚠ **Partial Support**:
 - Images: Image references are exported but may not display if paths are invalid
 
 ### Export Quality
@@ -383,7 +383,7 @@ Two checkboxes control export behavior:
 
 **When CHECKED (default)**:
 - The exporter looks for manual numbers in headings
-- Example: `## 1.2.3 System Overview` ? "1.2.3" is detected
+- Example: `## 1.2.3 System Overview` → "1.2.3" is detected
 - These numbers are removed from the text
 - Word's automatic numbering is applied (hierarchical: 1, 1.1, 1.1.1, etc.)
 - All headings get consistent numbering
@@ -395,8 +395,8 @@ Two checkboxes control export behavior:
 - You have full control over heading text
 
 **When to use**:
-- ? Check if: Your document uses numbered sections and you want consistent Word numbering
-- ? Uncheck if: Your headings don't need numbers, or you want to keep manual numbers as-is
+- ✓ Check if: Your document uses numbered sections and you want consistent Word numbering
+- ✗ Uncheck if: Your headings don't need numbers, or you want to keep manual numbers as-is
 
 **Example**:
 
@@ -429,8 +429,8 @@ With checkbox **unchecked**:
 - Standard markdown-to-heading mapping
 
 **When to use**:
-- ? Check if: Your document has a main title as `#` and section headings below
-- ? Uncheck if: You want traditional heading hierarchy starting at `#` = Heading 1
+- ✓ Check if: Your document has a main title as `#` and section headings below
+- ✗ Uncheck if: You want traditional heading hierarchy starting at `#` = Heading 1
 
 **Example**:
 
@@ -456,11 +456,11 @@ With checkbox **unchecked**:
 The two options work independently. Common combinations:
 
 | Auto-number | # as Title | Result |
-| --- | --- | --- |
-| ? | ? | Document with title + numbered headings (most common) |
-| ? | ? | Document with title, no numbering |
-| ? | ? | Traditional headings with numbering |
-| ? | ? | Plain export, no modifications |
+| ----------- | ---------- | ------ |
+| ✓           |      ✓     | Document with title + numbered headings (most common) |
+| ✗          |      ✓     | Document with title, no numbering |
+| ✓           |     ✗     | Traditional headings with numbering |
+| ✗          |     ✗      | Plain export, no modifications |
 
 ---
 
@@ -469,10 +469,10 @@ The two options work independently. Common combinations:
 ### Quickly Change Heading Level
 
 1. Place cursor on a heading line
-2. Click the **H2 ?** dropdown
+2. Click the **H2 ▼** dropdown
 3. Select a new level (e.g., H4)
 4. Click the **H4** button
-5. Heading is updated: `##` ? `####`
+5. Heading is updated: `##` → `####`
 
 ### Convert Plain Lines to List
 
@@ -490,7 +490,7 @@ The preview updates automatically on every keystroke. If it seems stuck:
 ### Suggested Filename
 
 When exporting, the filename is automatically suggested from your document's first heading:
-- `# Project Overview` ? suggests "Project Overview.docx"
+- `# Project Overview` → suggests "Project Overview.docx"
 - Special characters are replaced with underscores
 - Long names are truncated to 200 characters
 
@@ -574,7 +574,7 @@ Standard TextBox shortcuts work:
 - Try exporting again
 - Check that export completed (look for success message)
 - Open in newer version of Word (2013+)
-- Try Word's repair feature: Open ? Browse ? select file ? Open ? ? Open and Repair
+- Try Word's repair feature: Open → Browse → select file → Open → Open and Repair
 
 ### Preview Looks Different than Word Export
 
@@ -649,4 +649,4 @@ For bugs or feature requests, please open an issue in the repository with:
 
 ---
 
-**Happy Markdown editing!** ??
+**Happy Markdown editing!** ✨📝
